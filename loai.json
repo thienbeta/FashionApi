@@ -1,0 +1,32 @@
+[
+  {
+    "MaLoai": 1,
+    "TenLoai": "Gi\u00E0y Th\u1EC3 Thao",
+    "MoTa": "Gi\u00E0y Th\u1EC3 Thao",
+    "KiHieu": "GT",
+    "HinhAnh": "/DanhMuc/aad852eb-c785-4718-a25e-082632854c35.png",
+    "NgayTao": "2025-07-18T03:43:04.2998606Z",
+    "TrangThai": 1,
+    "SanPhams": []
+  },
+  {
+    "MaLoai": 2,
+    "TenLoai": "Qu\u1EA7n Th\u1EC3 Thao",
+    "MoTa": "Qu\u1EA7n Th\u1EC3 Thao",
+    "KiHieu": "QT",
+    "HinhAnh": "/DanhMuc/7440cccd-d4f0-42ed-b3b3-573c57035d70.png",
+    "NgayTao": "2025-07-18T03:43:21.9921597Z",
+    "TrangThai": 1,
+    "SanPhams": []
+  },
+  {
+    "MaLoai": 3,
+    "TenLoai": "\u00C1o Th\u1EC3 Thao",
+    "MoTa": "\u00C1o Th\u1EC3 Thao",
+    "KiHieu": "AT",
+    "HinhAnh": "/DanhMuc/b9d78682-31c0-4d18-9323-6483b8f5e693.jpg",
+    "NgayTao": "2025-07-18T03:43:33.5314777Z",
+    "TrangThai": 1,
+    "SanPhams": []
+  }
+]
