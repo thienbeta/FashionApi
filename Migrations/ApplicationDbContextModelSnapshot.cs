@@ -22,136 +22,40 @@ namespace FashionApi.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("FashionApi.DTO.Hashtag", b =>
+            modelBuilder.Entity("FashionApi.DTO.BienThe", b =>
                 {
-                    b.Property<int>("MaHashtag")
+                    b.Property<int>("MaBienThe")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MaHashtag"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MaBienThe"));
+
+                    b.Property<decimal>("GiaBan")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("GiaNhap")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("HinhAnh")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
-                    b.Property<string>("MoTa")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<DateTime>("NgayTao")
+                    b.Property<decimal>("KhuyenMai")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getutcdate()");
+                        .HasColumnType("decimal(5,2)")
+                        .HasDefaultValue(0m);
 
-                    b.Property<string>("TenHashtag")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<int>("TrangThai")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(1);
-
-                    b.HasKey("MaHashtag");
-
-                    b.ToTable("Hashtags");
-                });
-
-            modelBuilder.Entity("FashionApi.DTO.KichThuoc", b =>
-                {
                     b.Property<int>("MaKichThuoc")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MaKichThuoc"));
-
-                    b.Property<string>("HinhAnh")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("MoTa")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<DateTime>("NgayTao")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getutcdate()");
-
-                    b.Property<string>("TenKichThuoc")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<int>("TrangThai")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(1);
-
-                    b.HasKey("MaKichThuoc");
-
-                    b.ToTable("KichThuocs");
-                });
-
-            modelBuilder.Entity("FashionApi.DTO.Loai", b =>
-                {
-                    b.Property<int>("MaLoai")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MaLoai"));
-
-                    b.Property<string>("HinhAnh")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("KiHieu")
-                        .IsRequired()
-                        .HasMaxLength(2)
-                        .HasColumnType("nvarchar(2)");
-
-                    b.Property<string>("MoTa")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<DateTime>("NgayTao")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getutcdate()");
-
-                    b.Property<string>("TenLoai")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<int>("TrangThai")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(1);
-
-                    b.HasKey("MaLoai");
-
-                    b.ToTable("Loais");
-                });
-
-            modelBuilder.Entity("FashionApi.DTO.Mau", b =>
-                {
                     b.Property<int>("MaMau")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MaMau"));
+                    b.Property<int?>("MaSanPham")
+                        .HasColumnType("int");
 
-                    b.Property<string>("CodeMau")
+                    b.Property<string>("MaVach")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("HinhAnh")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("MoTa")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
@@ -160,19 +64,106 @@ namespace FashionApi.Migrations
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("getutcdate()");
 
-                    b.Property<string>("TenMau")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                    b.Property<int>("SoLuongBan")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SoLuongNhap")
+                        .HasColumnType("int");
 
                     b.Property<int>("TrangThai")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
                         .HasDefaultValue(1);
 
-                    b.HasKey("MaMau");
+                    b.HasKey("MaBienThe");
 
-                    b.ToTable("Maus");
+                    b.HasIndex("MaKichThuoc");
+
+                    b.HasIndex("MaMau");
+
+                    b.HasIndex("MaSanPham");
+
+                    b.ToTable("BienThes");
+                });
+
+            modelBuilder.Entity("FashionApi.DTO.BinhLuan", b =>
+                {
+                    b.Property<int>("MaBinhLuan")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MaBinhLuan"));
+
+                    b.Property<int?>("DanhGia")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MaNguoiDung")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("MaSanPham")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("NgayTao")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getutcdate()");
+
+                    b.Property<string>("NoiDung")
+                        .HasColumnType("text");
+
+                    b.Property<string>("TieuDe")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("TrangThai")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(1);
+
+                    b.HasKey("MaBinhLuan");
+
+                    b.HasIndex("MaNguoiDung");
+
+                    b.HasIndex("MaSanPham");
+
+                    b.ToTable("BinhLuans");
+                });
+
+            modelBuilder.Entity("FashionApi.DTO.DanhMuc", b =>
+                {
+                    b.Property<int>("MaDanhMuc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MaDanhMuc"));
+
+                    b.Property<string>("HinhAnh")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("LoaiDanhMuc")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("NgayTao")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getutcdate()");
+
+                    b.Property<string>("TenDanhMuc")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("TrangThai")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(1);
+
+                    b.HasKey("MaDanhMuc");
+
+                    b.HasIndex("TenDanhMuc");
+
+                    b.ToTable("DanhMucs");
                 });
 
             modelBuilder.Entity("FashionApi.DTO.Media", b =>
@@ -192,13 +183,20 @@ namespace FashionApi.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<string>("LinkMedia")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<string>("LoaiMedia")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
-                    b.Property<string>("MaSanPham")
-                        .HasColumnType("nvarchar(50)");
+                    b.Property<int?>("MaBinhLuan")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("MaSanPham")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("NgayTao")
                         .ValueGeneratedOnAdd()
@@ -212,84 +210,130 @@ namespace FashionApi.Migrations
 
                     b.HasKey("MaMedia");
 
+                    b.HasIndex("MaBinhLuan");
+
                     b.HasIndex("MaSanPham");
 
                     b.ToTable("Medias");
                 });
 
-            modelBuilder.Entity("FashionApi.DTO.SanPham", b =>
+            modelBuilder.Entity("FashionApi.DTO.NguoiDung", b =>
                 {
-                    b.Property<string>("MaSanPham")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                    b.Property<int>("MaNguoiDung")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
 
-                    b.Property<string>("ChatLieu")
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MaNguoiDung"));
+
+                    b.Property<string>("Avt")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<decimal>("GiaBan")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal>("GiaNhap")
-                        .HasColumnType("decimal(18,2)");
-
                     b.Property<int>("GioiTinh")
-                        .HasColumnType("int");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
 
-                    b.Property<string>("HinhAnh")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                    b.Property<string>("HoTen")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
-                    b.Property<decimal>("KhoiLuong")
-                        .HasColumnType("decimal(18,2)");
+                    b.Property<string>("MatKhau")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
-                    b.Property<int?>("MaHashtag")
-                        .HasColumnType("int");
-
-                    b.Property<int>("MaKichThuoc")
-                        .HasColumnType("int");
-
-                    b.Property<int>("MaLoai")
-                        .HasColumnType("int");
-
-                    b.Property<int>("MaMau")
-                        .HasColumnType("int");
-
-                    b.Property<int>("MaThuongHieu")
-                        .HasColumnType("int");
-
-                    b.Property<string>("MoTa")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
-
-                    b.Property<DateTime?>("NgayBatDauSale")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("NgayKetThucSale")
-                        .HasColumnType("datetime2");
+                    b.Property<DateTime?>("NgaySinh")
+                        .HasColumnType("date");
 
                     b.Property<DateTime>("NgayTao")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("getutcdate()");
 
-                    b.Property<double>("PhanTramSale")
-                        .HasColumnType("float");
+                    b.Property<string>("Sdt")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("TaiKhoan")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("TieuSu")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime?>("TimeKhoa")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("TrangThai")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(1);
+
+                    b.Property<int>("VaiTro")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.HasKey("MaNguoiDung");
+
+                    b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.HasIndex("TaiKhoan")
+                        .IsUnique();
+
+                    b.ToTable("NguoiDungs");
+                });
+
+            modelBuilder.Entity("FashionApi.DTO.SanPham", b =>
+                {
+                    b.Property<int>("MaSanPham")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MaSanPham"));
+
+                    b.Property<string>("ChatLieu")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("GioiTinh")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<int?>("MaHashtag")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MaLoai")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MaThuongHieu")
+                        .HasColumnType("int");
+
+                    b.Property<string>("MoTa")
+                        .HasMaxLength(10000)
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("NgayTao")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getutcdate()");
 
                     b.Property<string>("Slug")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
-
-                    b.Property<int>("SoLuongBan")
-                        .HasColumnType("int");
-
-                    b.Property<int>("SoLuongNhap")
-                        .HasColumnType("int");
-
-                    b.Property<decimal>("SoLuongSale")
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("TenSanPham")
                         .IsRequired()
@@ -305,132 +349,131 @@ namespace FashionApi.Migrations
 
                     b.HasIndex("MaHashtag");
 
-                    b.HasIndex("MaKichThuoc");
-
                     b.HasIndex("MaLoai");
 
-                    b.HasIndex("MaMau");
-
                     b.HasIndex("MaThuongHieu");
+
+                    b.HasIndex("Slug")
+                        .IsUnique();
+
+                    b.HasIndex("TenSanPham");
 
                     b.ToTable("SanPhams");
                 });
 
-            modelBuilder.Entity("FashionApi.DTO.ThuongHieu", b =>
+            modelBuilder.Entity("FashionApi.DTO.BienThe", b =>
                 {
-                    b.Property<int>("MaThuongHieu")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MaThuongHieu"));
-
-                    b.Property<string>("HinhAnh")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("MoTa")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<DateTime>("NgayTao")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getutcdate()");
-
-                    b.Property<string>("TenThuongHieu")
+                    b.HasOne("FashionApi.DTO.DanhMuc", "DanhMucKichThuoc")
+                        .WithMany()
+                        .HasForeignKey("MaKichThuoc")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                        .HasConstraintName("FK_BienThe_DanhMuc_KichThuoc");
 
-                    b.Property<int>("TrangThai")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(1);
+                    b.HasOne("FashionApi.DTO.DanhMuc", "DanhMucMau")
+                        .WithMany()
+                        .HasForeignKey("MaMau")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_BienThe_DanhMuc_Mau");
 
-                    b.HasKey("MaThuongHieu");
+                    b.HasOne("FashionApi.DTO.SanPham", "SanPhamNavigation")
+                        .WithMany("BienThes")
+                        .HasForeignKey("MaSanPham")
+                        .OnDelete(DeleteBehavior.Cascade);
 
-                    b.ToTable("ThuongHieus");
+                    b.Navigation("DanhMucKichThuoc");
+
+                    b.Navigation("DanhMucMau");
+
+                    b.Navigation("SanPhamNavigation");
+                });
+
+            modelBuilder.Entity("FashionApi.DTO.BinhLuan", b =>
+                {
+                    b.HasOne("FashionApi.DTO.NguoiDung", "NguoiDungNavigation")
+                        .WithMany("BinhLuans")
+                        .HasForeignKey("MaNguoiDung")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_BinhLuan_NguoiDung");
+
+                    b.HasOne("FashionApi.DTO.SanPham", "SanPhamNavigation")
+                        .WithMany("BinhLuans")
+                        .HasForeignKey("MaSanPham")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasConstraintName("FK_BinhLuan_SanPham");
+
+                    b.Navigation("NguoiDungNavigation");
+
+                    b.Navigation("SanPhamNavigation");
                 });
 
             modelBuilder.Entity("FashionApi.DTO.Media", b =>
                 {
+                    b.HasOne("FashionApi.DTO.BinhLuan", "BinhLuanNavigation")
+                        .WithMany("Medias")
+                        .HasForeignKey("MaBinhLuan")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasConstraintName("FK_Media_BinhLuan");
+
                     b.HasOne("FashionApi.DTO.SanPham", "SanPhamNavigation")
                         .WithMany("Medias")
-                        .HasForeignKey("MaSanPham");
+                        .HasForeignKey("MaSanPham")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("FK_Media_SanPham");
+
+                    b.Navigation("BinhLuanNavigation");
 
                     b.Navigation("SanPhamNavigation");
                 });
 
             modelBuilder.Entity("FashionApi.DTO.SanPham", b =>
                 {
-                    b.HasOne("FashionApi.DTO.Hashtag", "HashtagNavigation")
-                        .WithMany("SanPhams")
+                    b.HasOne("FashionApi.DTO.DanhMuc", "DanhMucHashtag")
+                        .WithMany()
                         .HasForeignKey("MaHashtag")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("FashionApi.DTO.KichThuoc", "KichThuocNavigation")
-                        .WithMany("SanPhams")
-                        .HasForeignKey("MaKichThuoc")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .HasConstraintName("FK_SanPham_DanhMuc_Hashtag");
 
-                    b.HasOne("FashionApi.DTO.Loai", "LoaiNavigation")
-                        .WithMany("SanPhams")
+                    b.HasOne("FashionApi.DTO.DanhMuc", "DanhMucLoai")
+                        .WithMany()
                         .HasForeignKey("MaLoai")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("FK_SanPham_DanhMuc_Loai");
 
-                    b.HasOne("FashionApi.DTO.Mau", "MauNavigation")
-                        .WithMany("SanPhams")
-                        .HasForeignKey("MaMau")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("FashionApi.DTO.ThuongHieu", "ThuongHieuNavigation")
-                        .WithMany("SanPhams")
+                    b.HasOne("FashionApi.DTO.DanhMuc", "DanhMucThuongHieu")
+                        .WithMany()
                         .HasForeignKey("MaThuongHieu")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("FK_SanPham_DanhMuc_ThuongHieu");
 
-                    b.Navigation("HashtagNavigation");
+                    b.Navigation("DanhMucHashtag");
 
-                    b.Navigation("KichThuocNavigation");
+                    b.Navigation("DanhMucLoai");
 
-                    b.Navigation("LoaiNavigation");
-
-                    b.Navigation("MauNavigation");
-
-                    b.Navigation("ThuongHieuNavigation");
+                    b.Navigation("DanhMucThuongHieu");
                 });
 
-            modelBuilder.Entity("FashionApi.DTO.Hashtag", b =>
-                {
-                    b.Navigation("SanPhams");
-                });
-
-            modelBuilder.Entity("FashionApi.DTO.KichThuoc", b =>
-                {
-                    b.Navigation("SanPhams");
-                });
-
-            modelBuilder.Entity("FashionApi.DTO.Loai", b =>
-                {
-                    b.Navigation("SanPhams");
-                });
-
-            modelBuilder.Entity("FashionApi.DTO.Mau", b =>
-                {
-                    b.Navigation("SanPhams");
-                });
-
-            modelBuilder.Entity("FashionApi.DTO.SanPham", b =>
+            modelBuilder.Entity("FashionApi.DTO.BinhLuan", b =>
                 {
                     b.Navigation("Medias");
                 });
 
-            modelBuilder.Entity("FashionApi.DTO.ThuongHieu", b =>
+            modelBuilder.Entity("FashionApi.DTO.NguoiDung", b =>
                 {
-                    b.Navigation("SanPhams");
+                    b.Navigation("BinhLuans");
+                });
+
+            modelBuilder.Entity("FashionApi.DTO.SanPham", b =>
+                {
+                    b.Navigation("BienThes");
+
+                    b.Navigation("BinhLuans");
+
+                    b.Navigation("Medias");
                 });
 #pragma warning restore 612, 618
         }

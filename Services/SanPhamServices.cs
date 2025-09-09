@@ -1,300 +1,739 @@
-﻿// File: FashionApi/Services/SanPhamServices.cs
-using FashionApi.Data;
+﻿using FashionApi.Data;
 using FashionApi.DTO;
 using FashionApi.Models.Create;
 using FashionApi.Models.Edit;
 using FashionApi.Models.View;
 using FashionApi.Repository;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace FashionApi.Services
 {
     public class SanPhamServices : ISanPhamServices
     {
         private readonly ApplicationDbContext _context;
+        private readonly IMediaServices _mediaServices;
+        private readonly IMemoryCacheServices _cacheServices;
+        private readonly IBienTheServices _bienTheServices;
+        private readonly ILogger<SanPhamServices> _logger;
 
-        public SanPhamServices(ApplicationDbContext context)
+        public SanPhamServices(
+            ApplicationDbContext context,
+            IMediaServices mediaServices,
+            IMemoryCacheServices cacheServices,
+            IBienTheServices bienTheServices,
+            ILogger<SanPhamServices> logger)
         {
-            _context = context;
+            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _mediaServices = mediaServices ?? throw new ArgumentNullException(nameof(mediaServices));
+            _cacheServices = cacheServices ?? throw new ArgumentNullException(nameof(cacheServices));
+            _bienTheServices = bienTheServices ?? throw new ArgumentNullException(nameof(bienTheServices));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
-        public async Task<bool> CreateAsync(SanPhamCreate model)
+
+        private string Truncate(string value, int maxLength)
         {
-            // 1. Kiểm tra loại
-            var loai = await _context.Loais.FindAsync(model.MaLoai);
-            if (loai == null)
-                return false;
+            if (string.IsNullOrEmpty(value)) return value;
+            return value.Length <= maxLength ? value : value.Substring(0, maxLength) + "...";
+        }
 
-            var prefix = loai.KiHieu.Trim().ToUpper();
+        public async Task<SanPhamView> CreateAsync(SanPhamCreate model)
+        {
+            _logger.LogInformation("Bắt đầu tạo sản phẩm mới: TenSanPham={TenSanPham}, MaLoai={MaLoai}", model.TenSanPham, model.MaLoai);
 
-            // 2. Lấy mã gốc có prefix (ví dụ AT)
-            var baseCodes = await _context.SanPhams
-                .Where(sp => sp.MaSanPham.StartsWith(prefix + "_"))
-                .Select(sp => sp.MaSanPham)
-                .ToListAsync();
+            if (model == null)
+                throw new ArgumentException("Thông tin sản phẩm không hợp lệ.");
 
-            // 3. Tìm mã gốc lớn nhất hiện tại (ví dụ AT_1, AT_2)
-            int maxBase = baseCodes
-                .Select(code => code.Split('_'))
-                .Where(parts => parts.Length >= 2 && int.TryParse(parts[1], out _))
-                .Select(parts => int.Parse(parts[1]))
-                .DefaultIfEmpty(0)
-                .Max();
+            // Sinh slug từ tên sản phẩm
+            var baseSlug = GenerateSlug(model.TenSanPham);
+            var finalSlug = await GetUniqueSlugAsync(baseSlug);
 
-            // 4. Tìm mã gốc hiện tại (ví dụ AT_1)
-            var baseCode = $"{prefix}_{maxBase}";
+            // Validate danh mục
+            if (!await IsValidDanhMuc(model.MaLoai, 1))
+                throw new ArgumentException("Loại sản phẩm không hợp lệ.");
 
-            // 5. Kiểm tra nếu mã gốc chưa có dòng nào, thì là dòng đầu tiên → AT_1
-            bool baseCodeExists = baseCodes.Any(code => code == baseCode);
+            if (!await IsValidDanhMuc(model.MaThuongHieu, 2))
+                throw new ArgumentException("Thương hiệu không hợp lệ.");
 
-            string finalCode;
-            if (!baseCodeExists)
+            if (model.MaHashtag.HasValue && !await IsValidDanhMuc(model.MaHashtag.Value, 3))
+                throw new ArgumentException("Hashtag không hợp lệ.");
+
+            try
             {
-                finalCode = baseCode; // Sản phẩm đầu tiên của loại
-            }
-            else
-            {
-                // Lấy các mã biến thể AT_1_1, AT_1_2...
-                var variants = baseCodes
-                    .Where(code => code.StartsWith(baseCode + "_"))
-                    .Select(code => code.Substring(baseCode.Length + 1))
-                    .Select(suffix => int.TryParse(suffix, out var n) ? n : 0)
-                    .DefaultIfEmpty(0)
-                    .ToList();
-
-                int nextVariant = variants.Any() ? variants.Max() + 1 : 1;
-                finalCode = $"{baseCode}_{nextVariant}";
-            }
-
-            // 6. Kiểm tra trùng slug
-            bool slugExists = await _context.SanPhams.AnyAsync(sp => sp.Slug == model.Slug.Trim());
-            if (slugExists)
-                return false;
-
-            // 7. Tạo entity
-            var entity = new SanPham
-            {
-                MaSanPham = finalCode,
-                TenSanPham = model.TenSanPham.Trim(),
-                MoTa = model.MoTa,
-                HinhAnh = model.HinhAnh,
-                GiaBan = model.GiaBan,
-                GiaNhap = model.GiaNhap,
-                SoLuongNhap = model.SoLuongNhap,
-                SoLuongBan = 0,
-                SoLuongSale = model.SoLuongSale,
-                PhanTramSale = model.PhanTramSale,
-                Slug = model.Slug.Trim(),
-                ChatLieu = model.ChatLieu.Trim(),
-                GioiTinh = model.GioiTinh ?? 0,
-                MaKichThuoc = model.MaKichThuoc,
-                MaMau = model.MaMau,
-                MaThuongHieu = model.MaThuongHieu,
-                MaLoai = model.MaLoai,
-                MaHashtag = model.MaHashtag,
-                TrangThai = 1,
-                NgayTao = DateTime.UtcNow
-            };
-
-            // 8. Lưu DB
-            _context.SanPhams.Add(entity);
-            await _context.SaveChangesAsync();
-            return true;
-        }
-
-        public async Task<bool> UpdateAsync(SanPhamEdit model)
-        {
-            var sp = await _context.SanPhams.FindAsync(model.MaSanPham);
-            if (sp == null) return false;
-
-            // Cập nhật thuộc tính
-            sp.TenSanPham = model.TenSanPham.Trim();
-            sp.MoTa = model.MoTa;
-            sp.HinhAnh = model.HinhAnh;
-            sp.GiaBan = model.GiaBan;
-            sp.GiaNhap = model.GiaNhap;
-            sp.SoLuongNhap = model.SoLuongNhap;
-            sp.SoLuongBan = model.SoLuongBan;
-            sp.SoLuongSale = model.SoLuongSale;
-            sp.PhanTramSale = model.PhanTramSale;
-            sp.Slug = model.Slug.Trim();
-            sp.ChatLieu = model.ChatLieu.Trim();
-            sp.GioiTinh = model.GioiTinh ?? sp.GioiTinh;
-            sp.MaKichThuoc = model.MaKichThuoc;
-            sp.MaMau = model.MaMau;
-            sp.MaThuongHieu = model.MaThuongHieu;
-            sp.MaLoai = model.MaLoai;
-            sp.MaHashtag = model.MaHashtag;
-            sp.TrangThai = model.TrangThai;
-
-            _context.SanPhams.Update(sp);
-            await _context.SaveChangesAsync();
-            return true;
-        }
-
-        public async Task<bool> DeleteAsync(string maSanPham)
-        {
-            var sp = await _context.SanPhams.FindAsync(maSanPham);
-            if (sp == null) return false;
-
-            _context.SanPhams.Remove(sp);
-            await _context.SaveChangesAsync();
-            return true;
-        }
-
-        public async Task<SanPhamView?> GetByIdAsync(string maSanPham)
-        {
-            return await _context.SanPhams
-                .Include(sp => sp.KichThuocNavigation)
-                .Include(sp => sp.MauNavigation)
-                .Include(sp => sp.ThuongHieuNavigation)
-                .Include(sp => sp.LoaiNavigation)
-                .Include(sp => sp.HashtagNavigation)
-                .Include(sp => sp.Medias)
-                .Where(sp => sp.MaSanPham == maSanPham)
-                .Select(sp => new SanPhamView
+                var sanPham = new SanPham
                 {
-                    MaSanPham = sp.MaSanPham,
-                    TenSanPham = sp.TenSanPham,
-                    MoTa = sp.MoTa,
-                    HinhAnh = sp.HinhAnh,
-                    GiaBan = sp.GiaBan,
-                    GiaNhap = sp.GiaNhap,
-                    SoLuongNhap = sp.SoLuongNhap,
-                    SoLuongBan = sp.SoLuongBan,
-                    SoLuongSale = sp.SoLuongSale,
-                    PhanTramSale = sp.PhanTramSale,
-                    Slug = sp.Slug,
-                    ChatLieu = sp.ChatLieu,
-                    GioiTinh = sp.GioiTinh,
-                    NgayTao = sp.NgayTao,
-                    TrangThai = sp.TrangThai,
-                    MaKichThuoc = sp.MaKichThuoc,
-                    MaMau = sp.MaMau,
-                    MaThuongHieu = sp.MaThuongHieu,
-                    MaLoai = sp.MaLoai,
-                    MaHashtag = sp.MaHashtag,
-                    TenKichThuoc = sp.KichThuocNavigation.TenKichThuoc,
-                    TenMau = sp.MauNavigation.TenMau,
-                    TenThuongHieu = sp.ThuongHieuNavigation.TenThuongHieu,
-                    TenLoai = sp.LoaiNavigation.TenLoai,
-                    TenHashtag = sp.HashtagNavigation!.TenHashtag,
-                    Medias = sp.Medias.Select(m => new MediaView
+                    TenSanPham = model.TenSanPham,
+                    MoTa = model.MoTa,
+                    Slug = finalSlug,
+                    ChatLieu = model.ChatLieu,
+                    GioiTinh = model.GioiTinh,
+                    MaLoai = model.MaLoai,
+                    MaThuongHieu = model.MaThuongHieu,
+                    MaHashtag = model.MaHashtag,
+                    NgayTao = DateTime.UtcNow,
+                    TrangThai = 1
+                };
+
+                _context.SanPhams.Add(sanPham);
+                await _context.SaveChangesAsync();
+
+                // Lưu ảnh
+                if (model.Images != null && model.Images.Any())
+                {
+                    for (int i = 0; i < model.Images.Count; i++)
                     {
-                        MaMedia = m.MaMedia,
-                        LoaiMedia = m.LoaiMedia,
-                        DuongDan = m.DuongDan,
-                        AltMedia = m.AltMedia,
-                        NgayTao = m.NgayTao,
-                        TrangThai = m.TrangThai,
-                        MaSanPham = m.MaSanPham
-                    }).ToList()
-                })
-                .FirstOrDefaultAsync();
+                        var imageFile = model.Images[i];
+
+                        if (!imageFile.ContentType.StartsWith("image/"))
+                            throw new ArgumentException($"Tệp {imageFile.FileName} không phải hình ảnh.");
+
+                        if (imageFile.Length > 5 * 1024 * 1024)
+                            throw new ArgumentException($"Kích thước tệp {imageFile.FileName} không được vượt quá 5MB.");
+
+                        var imageUrl = await _mediaServices.SaveOptimizedImageAsync(imageFile, "sanpham");
+
+                        var media = new Media
+                        {
+                            MaSanPham = sanPham.MaSanPham,
+                            LoaiMedia = "image",
+                            DuongDan = imageUrl,
+                            AltMedia = $"Ảnh sản phẩm {Truncate(sanPham.TenSanPham, 70)} - {i + 1}",
+                            TrangThai = 1,
+                            NgayTao = DateTime.UtcNow
+                        };
+                        _context.Medias.Add(media);
+                    }
+                    await _context.SaveChangesAsync();
+                }
+
+                // Clear cache
+                _cacheServices.Remove("SanPham_All");
+                _cacheServices.Remove($"SanPham_{sanPham.MaSanPham}");
+                _cacheServices.Remove($"SanPham_DanhMuc_{sanPham.MaLoai}");
+
+                return await GetByIdAsync(sanPham.MaSanPham);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi tạo sản phẩm: {Message}", ex.Message);
+                throw;
+            }
+        }
+
+        public async Task<SanPhamView> UpdateAsync(int id, SanPhamEdit model, List<IFormFile>? newImageFiles = null)
+        {
+            _logger.LogInformation("Bắt đầu cập nhật sản phẩm: MaSanPham={Id}, TenSanPham={TenSanPham}", id, model.TenSanPham);
+
+            if (model == null)
+            {
+                _logger.LogWarning("Thông tin cập nhật không hợp lệ: MaSanPham={Id}", id);
+                throw new ArgumentException("Thông tin cập nhật không hợp lệ.");
+            }
+
+            try
+            {
+                var sanPham = await _context.SanPhams
+                    .Include(sp => sp.DanhMucLoai)
+                    .Include(sp => sp.DanhMucThuongHieu)
+                    .Include(sp => sp.DanhMucHashtag)
+                    .Include(sp => sp.Medias)
+                    .FirstOrDefaultAsync(sp => sp.MaSanPham == id);
+
+                if (sanPham == null)
+                {
+                    _logger.LogWarning("Sản phẩm không tồn tại: MaSanPham={Id}", id);
+                    throw new KeyNotFoundException("Sản phẩm không tồn tại.");
+                }
+
+                // Validate input
+                if (model.Slug != null && !System.Text.RegularExpressions.Regex.IsMatch(model.Slug, @"^[a-z0-9]+(?:-[a-z0-9]+)*$"))
+                {
+                    _logger.LogWarning("Slug không hợp lệ: Slug={Slug}", model.Slug);
+                    throw new ArgumentException("Slug chỉ chứa chữ thường, số và dấu gạch nối.");
+                }
+
+                if (model.Slug != null && model.Slug != sanPham.Slug && await _context.SanPhams.AnyAsync(sp => sp.Slug == model.Slug && sp.TrangThai == 1))
+                {
+                    _logger.LogWarning("Slug đã tồn tại: Slug={Slug}", model.Slug);
+                    throw new ArgumentException("Slug đã tồn tại.");
+                }
+
+                if (model.MaLoai.HasValue && !await IsValidDanhMuc(model.MaLoai.Value, 1))
+                {
+                    _logger.LogWarning("Loại sản phẩm không hợp lệ: MaLoai={MaLoai}", model.MaLoai);
+                    throw new ArgumentException("Loại sản phẩm không hợp lệ.");
+                }
+
+                if (model.MaThuongHieu.HasValue && !await IsValidDanhMuc(model.MaThuongHieu.Value, 2))
+                {
+                    _logger.LogWarning("Thương hiệu không hợp lệ: MaThuongHieu={MaThuongHieu}", model.MaThuongHieu);
+                    throw new ArgumentException("Thương hiệu không hợp lệ.");
+                }
+
+                if (model.MaHashtag.HasValue && !await IsValidDanhMuc(model.MaHashtag.Value, 3))
+                {
+                    _logger.LogWarning("Hashtag không hợp lệ: MaHashtag={MaHashtag}", model.MaHashtag);
+                    throw new ArgumentException("Hashtag không hợp lệ.");
+                }
+
+                // Update properties
+                if (model.TenSanPham != null)
+                    sanPham.TenSanPham = model.TenSanPham;
+                if (model.MoTa != null)
+                    sanPham.MoTa = model.MoTa;
+                if (model.Slug != null)
+                    sanPham.Slug = model.Slug;
+                if (model.ChatLieu != null)
+                    sanPham.ChatLieu = model.ChatLieu;
+                if (model.GioiTinh.HasValue)
+                    sanPham.GioiTinh = model.GioiTinh.Value;
+                if (model.MaLoai.HasValue)
+                    sanPham.MaLoai = model.MaLoai.Value;
+                if (model.MaThuongHieu.HasValue)
+                    sanPham.MaThuongHieu = model.MaThuongHieu.Value;
+                if (model.MaHashtag.HasValue)
+                    sanPham.MaHashtag = model.MaHashtag.Value;
+                if (model.TrangThai.HasValue)
+                    sanPham.TrangThai = model.TrangThai.Value;
+
+                // Handle new images
+                if (newImageFiles != null && newImageFiles.Any())
+                {
+                    foreach (var imageFile in newImageFiles)
+                    {
+                        if (!imageFile.ContentType.StartsWith("image/"))
+                        {
+                            _logger.LogWarning("Tệp tải lên không phải hình ảnh: {FileName}", imageFile.FileName);
+                            throw new ArgumentException($"Tệp {imageFile.FileName} không phải hình ảnh.");
+                        }
+                        if (imageFile.Length > 5 * 1024 * 1024)
+                        {
+                            _logger.LogWarning("Kích thước tệp hình ảnh quá lớn: {FileName}, Kích thước: {Size} bytes", imageFile.FileName, imageFile.Length);
+                            throw new ArgumentException($"Kích thước tệp {imageFile.FileName} không được vượt quá 5MB.");
+                        }
+
+                        var imageUrl = await _mediaServices.SaveOptimizedImageAsync(imageFile, "sanpham");
+                        _logger.LogInformation("Hình ảnh mới đã được lưu: {ImageUrl}", imageUrl);
+
+                        var media = new Media
+                        {
+                            MaSanPham = sanPham.MaSanPham,
+                            LoaiMedia = "image",
+                            DuongDan = imageUrl,
+                            AltMedia = $"Ảnh sản phẩm {Truncate(sanPham.TenSanPham, 70)} - {sanPham.Medias.Count + 1}",
+                            TrangThai = 1,
+                            NgayTao = DateTime.UtcNow
+                        };
+                        _context.Medias.Add(media);
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+                _logger.LogInformation("Sản phẩm được cập nhật thành công: MaSanPham={Id}", id);
+
+                // Clear cache
+                _cacheServices.Remove($"SanPham_{id}");
+                _cacheServices.Remove("SanPham_All");
+                _cacheServices.Remove($"SanPham_DanhMuc_{sanPham.MaLoai}");
+
+                return await GetByIdAsync(id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi cập nhật sản phẩm: MaSanPham={Id}, StackTrace: {StackTrace}", id, ex.StackTrace);
+                throw;
+            }
+        }
+
+        public async Task<bool> DeleteAsync(int id)
+        {
+            _logger.LogInformation("Bắt đầu xóa sản phẩm: MaSanPham={Id}", id);
+
+            try
+            {
+                var sanPham = await _context.SanPhams
+                    .Include(sp => sp.Medias)
+                    .Include(sp => sp.BienThes)
+                    .FirstOrDefaultAsync(sp => sp.MaSanPham == id);
+
+                if (sanPham == null)
+                {
+                    _logger.LogWarning("Sản phẩm không tồn tại: MaSanPham={Id}", id);
+                    return false;
+                }
+
+                // Soft delete
+                sanPham.TrangThai = 0;
+                foreach (var bienThe in sanPham.BienThes)
+                {
+                    bienThe.TrangThai = 0;
+                }
+                foreach (var media in sanPham.Medias)
+                {
+                    media.TrangThai = 0;
+                }
+
+                await _context.SaveChangesAsync();
+                _logger.LogInformation("Sản phẩm được xóa mềm thành công: MaSanPham={Id}", id);
+
+                // Clear cache
+                _cacheServices.Remove($"SanPham_{id}");
+                _cacheServices.Remove("SanPham_All");
+                _cacheServices.Remove($"SanPham_DanhMuc_{sanPham.MaLoai}");
+                _cacheServices.Remove("SanPham_BestSelling");
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi xóa sản phẩm: MaSanPham={Id}, StackTrace: {StackTrace}", id, ex.StackTrace);
+                throw;
+            }
+        }
+
+        public async Task<SanPhamView> GetByIdAsync(int id)
+        {
+            _logger.LogInformation("Truy vấn sản phẩm: MaSanPham={Id}", id);
+
+            try
+            {
+                return await _cacheServices.GetOrCreateAsync($"SanPham_{id}", async () =>
+                {
+                    var sanPham = await _context.SanPhams
+                        .AsNoTracking()
+                        .Include(sp => sp.DanhMucLoai)
+                        .Include(sp => sp.DanhMucThuongHieu)
+                        .Include(sp => sp.DanhMucHashtag)
+                        .Include(sp => sp.Medias)
+                        .Include(sp => sp.BienThes)
+                            .ThenInclude(bt => bt.DanhMucMau)
+                        .Include(sp => sp.BienThes)
+                            .ThenInclude(bt => bt.DanhMucKichThuoc)
+                        .Include(sp => sp.BinhLuans)
+                        .FirstOrDefaultAsync(sp => sp.MaSanPham == id);
+
+                    if (sanPham == null)
+                    {
+                        _logger.LogWarning("Không tìm thấy sản phẩm: MaSanPham={Id}", id);
+                        return null;
+                    }
+
+                    return MapToView(sanPham);
+                }, TimeSpan.FromMinutes(10));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi truy vấn sản phẩm: MaSanPham={Id}, StackTrace: {StackTrace}", id, ex.StackTrace);
+                throw;
+            }
         }
 
         public async Task<List<SanPhamView>> GetAllAsync()
         {
-            return await _context.SanPhams
-                .Include(sp => sp.KichThuocNavigation)
-                .Include(sp => sp.MauNavigation)
-                .Include(sp => sp.ThuongHieuNavigation)
-                .Include(sp => sp.LoaiNavigation)
-                .Include(sp => sp.HashtagNavigation)
-                .Include(sp => sp.Medias)
-                .Select(sp => new SanPhamView
+            _logger.LogInformation("Truy vấn tất cả sản phẩm");
+
+            try
+            {
+                return await _cacheServices.GetOrCreateAsync("SanPham_All", async () =>
                 {
-                    MaSanPham = sp.MaSanPham,
-                    TenSanPham = sp.TenSanPham,
-                    MoTa = sp.MoTa,
-                    HinhAnh = sp.HinhAnh,
-                    GiaBan = sp.GiaBan,
-                    GiaNhap = sp.GiaNhap,
-                    SoLuongNhap = sp.SoLuongNhap,
-                    SoLuongBan = sp.SoLuongBan,
-                    SoLuongSale = sp.SoLuongSale,
-                    PhanTramSale = sp.PhanTramSale,
-                    Slug = sp.Slug,
-                    ChatLieu = sp.ChatLieu,
-                    GioiTinh = sp.GioiTinh,
-                    NgayTao = sp.NgayTao,
-                    TrangThai = sp.TrangThai,
-                    MaKichThuoc = sp.MaKichThuoc,
-                    MaMau = sp.MaMau,
-                    MaThuongHieu = sp.MaThuongHieu,
-                    MaLoai = sp.MaLoai,
-                    MaHashtag = sp.MaHashtag,
-                    TenKichThuoc = sp.KichThuocNavigation.TenKichThuoc,
-                    TenMau = sp.MauNavigation.TenMau,
-                    TenThuongHieu = sp.ThuongHieuNavigation.TenThuongHieu,
-                    TenLoai = sp.LoaiNavigation.TenLoai,
-                    TenHashtag = sp.HashtagNavigation!.TenHashtag,
-                    Medias = sp.Medias.Select(m => new MediaView
-                    {
-                        MaMedia = m.MaMedia,
-                        LoaiMedia = m.LoaiMedia,
-                        DuongDan = m.DuongDan,
-                        AltMedia = m.AltMedia,
-                        NgayTao = m.NgayTao,
-                        TrangThai = m.TrangThai,
-                        MaSanPham = m.MaSanPham
-                    }).ToList()
-                })
-                .ToListAsync();
+                    var sanPhams = await _context.SanPhams
+                        .AsNoTracking()
+                        .Include(sp => sp.DanhMucLoai)
+                        .Include(sp => sp.DanhMucThuongHieu)
+                        .Include(sp => sp.DanhMucHashtag)
+                        .Include(sp => sp.Medias)
+                        .Include(sp => sp.BienThes)
+                            .ThenInclude(bt => bt.DanhMucMau)
+                        .Include(sp => sp.BienThes)
+                            .ThenInclude(bt => bt.DanhMucKichThuoc)
+                        .Include(sp => sp.BinhLuans)
+                        .OrderByDescending(sp => sp.NgayTao)
+                        .ToListAsync();
+
+                    return sanPhams.Select(MapToView).ToList();
+                }, TimeSpan.FromMinutes(10));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi truy vấn tất cả sản phẩm, StackTrace: {StackTrace}", ex.StackTrace);
+                throw;
+            }
         }
 
-        public async Task<List<SanPhamView>> SearchAsync(string keyword)
+        public async Task<List<SanPhamView>> SearchAsync(decimal? giaBan, int? soLuongNhap, int? trangThai, string? maVach, int? maSanPham, string? tenSanPham)
         {
-            return await _context.SanPhams
-                .Include(sp => sp.KichThuocNavigation)
-                .Include(sp => sp.MauNavigation)
-                .Include(sp => sp.ThuongHieuNavigation)
-                .Include(sp => sp.LoaiNavigation)
-                .Include(sp => sp.HashtagNavigation)
-                .Include(sp => sp.Medias)
-                .Where(sp =>
-                    sp.TenSanPham.Contains(keyword) ||
-                    sp.Slug.Contains(keyword) ||
-                    sp.MaSanPham.Contains(keyword))
-                .Select(sp => new SanPhamView
+            _logger.LogInformation("Tìm kiếm sản phẩm: GiaBan={GiaBan}, SoLuongNhap={SoLuongNhap}, TrangThai={TrangThai}, MaVach={MaVach}, MaSanPham={MaSanPham}, TenSanPham={TenSanPham}",
+                giaBan, soLuongNhap, trangThai, maVach, maSanPham, tenSanPham);
+
+            try
+            {
+                var query = _context.SanPhams
+                    .AsNoTracking()
+                    .Include(sp => sp.DanhMucLoai)
+                    .Include(sp => sp.DanhMucThuongHieu)
+                    .Include(sp => sp.DanhMucHashtag)
+                    .Include(sp => sp.Medias)
+                    .Include(sp => sp.BienThes)
+                        .ThenInclude(bt => bt.DanhMucMau)
+                    .Include(sp => sp.BienThes)
+                        .ThenInclude(bt => bt.DanhMucKichThuoc)
+                    .Include(sp => sp.BinhLuans)
+                    .AsQueryable();
+
+                if (giaBan.HasValue)
                 {
-                    // giống projection của GetAllAsync
-                    MaSanPham = sp.MaSanPham,
-                    TenSanPham = sp.TenSanPham,
-                    MoTa = sp.MoTa,
-                    HinhAnh = sp.HinhAnh,
-                    GiaBan = sp.GiaBan,
-                    GiaNhap = sp.GiaNhap,
-                    SoLuongNhap = sp.SoLuongNhap,
-                    SoLuongBan = sp.SoLuongBan,
-                    SoLuongSale = sp.SoLuongSale,
-                    PhanTramSale = sp.PhanTramSale,
-                    Slug = sp.Slug,
-                    ChatLieu = sp.ChatLieu,
-                    GioiTinh = sp.GioiTinh,
-                    NgayTao = sp.NgayTao,
-                    TrangThai = sp.TrangThai,
-                    MaKichThuoc = sp.MaKichThuoc,
-                    MaMau = sp.MaMau,
-                    MaThuongHieu = sp.MaThuongHieu,
-                    MaLoai = sp.MaLoai,
-                    MaHashtag = sp.MaHashtag,
-                    TenKichThuoc = sp.KichThuocNavigation.TenKichThuoc,
-                    TenMau = sp.MauNavigation.TenMau,
-                    TenThuongHieu = sp.ThuongHieuNavigation.TenThuongHieu,
-                    TenLoai = sp.LoaiNavigation.TenLoai,
-                    TenHashtag = sp.HashtagNavigation!.TenHashtag,
-                    Medias = sp.Medias.Select(m => new MediaView
+                    query = query.Where(sp => sp.BienThes.Any(bt => bt.GiaBan <= giaBan.Value));
+                }
+
+                if (soLuongNhap.HasValue)
+                {
+                    query = query.Where(sp => sp.BienThes.Any(bt => bt.SoLuongNhap >= soLuongNhap.Value));
+                }
+
+                if (trangThai.HasValue)
+                {
+                    query = query.Where(sp => sp.TrangThai == trangThai.Value);
+                }
+
+                if (!string.IsNullOrEmpty(maVach))
+                {
+                    query = query.Where(sp => sp.BienThes.Any(bt => bt.MaVach == maVach));
+                }
+
+                if (maSanPham.HasValue)
+                {
+                    query = query.Where(sp => sp.MaSanPham == maSanPham.Value);
+                }
+
+                if (!string.IsNullOrEmpty(tenSanPham))
+                {
+                    query = query.Where(sp => sp.TenSanPham.Contains(tenSanPham));
+                }
+
+                var sanPhams = await query
+                    .OrderByDescending(sp => sp.NgayTao)
+                    .ThenBy(sp => sp.TenSanPham) // Sắp theo tên A-Z nếu cùng NgayTao
+                    .ToListAsync();
+
+
+                return sanPhams.Select(MapToView).ToList();
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi tìm kiếm sản phẩm, StackTrace: {StackTrace}", ex.StackTrace);
+                throw;
+            }
+        }
+
+        public async Task<List<SanPhamView>> FilterByLoaiDanhMucAsync(int maLoaiDanhMuc)
+        {
+            _logger.LogInformation("Lọc sản phẩm theo loại danh mục: MaLoaiDanhMuc={MaLoaiDanhMuc}", maLoaiDanhMuc);
+
+            try
+            {
+                var danhMuc = await _context.DanhMucs
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(dm => dm.MaDanhMuc == maLoaiDanhMuc && dm.TrangThai == 1);
+
+                if (danhMuc == null)
+                {
+                    _logger.LogWarning("Danh mục không tồn tại hoặc đã bị vô hiệu hóa: MaLoaiDanhMuc={MaLoaiDanhMuc}", maLoaiDanhMuc);
+                    return new List<SanPhamView>();
+                }
+
+                var query = _context.SanPhams
+                    .AsNoTracking()
+                    .Include(sp => sp.DanhMucLoai)
+                    .Include(sp => sp.DanhMucThuongHieu)
+                    .Include(sp => sp.DanhMucHashtag)
+                    .Include(sp => sp.Medias)
+                    .Include(sp => sp.BienThes)
+                        .ThenInclude(bt => bt.DanhMucMau)
+                    .Include(sp => sp.BienThes)
+                        .ThenInclude(bt => bt.DanhMucKichThuoc)
+                    .Include(sp => sp.BinhLuans)
+                    .Where(sp => sp.TrangThai == 1);
+
+                if (danhMuc.LoaiDanhMuc == 1)
+                {
+                    query = query.Where(sp => sp.MaLoai == maLoaiDanhMuc);
+                }
+                else if (danhMuc.LoaiDanhMuc == 2)
+                {
+                    query = query.Where(sp => sp.MaThuongHieu == maLoaiDanhMuc);
+                }
+                else if (danhMuc.LoaiDanhMuc == 3)
+                {
+                    query = query.Where(sp => sp.MaHashtag == maLoaiDanhMuc);
+                }
+                else
+                {
+                    _logger.LogWarning("Loại danh mục không hợp lệ cho sản phẩm: MaLoaiDanhMuc={MaLoaiDanhMuc}, LoaiDanhMuc={LoaiDanhMuc}", maLoaiDanhMuc, danhMuc.LoaiDanhMuc);
+                    return new List<SanPhamView>();
+                }
+
+                var sanPhams = await query
+                    .OrderByDescending(sp => sp.NgayTao) // 🔥 Sắp xếp mới nhất lên đầu
+                    .ToListAsync();
+
+                return sanPhams.Select(MapToView).ToList();
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lọc sản phẩm theo loại danh mục: MaLoaiDanhMuc={MaLoaiDanhMuc}, StackTrace: {StackTrace}", maLoaiDanhMuc, ex.StackTrace);
+                throw;
+            }
+        }
+
+        public async Task<List<SanPhamView>> GetByDanhMucAsync(int maDanhMuc)
+        {
+            _logger.LogInformation("Lấy sản phẩm theo danh mục: MaDanhMuc={MaDanhMuc}", maDanhMuc);
+
+            try
+            {
+                return await _cacheServices.GetOrCreateAsync($"SanPham_DanhMuc_{maDanhMuc}", async () =>
+                {
+                    var danhMuc = await _context.DanhMucs
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(dm => dm.MaDanhMuc == maDanhMuc && dm.TrangThai == 1);
+
+                    if (danhMuc == null)
                     {
-                        MaMedia = m.MaMedia,
-                        LoaiMedia = m.LoaiMedia,
-                        DuongDan = m.DuongDan,
-                        AltMedia = m.AltMedia,
-                        NgayTao = m.NgayTao,
-                        TrangThai = m.TrangThai,
-                        MaSanPham = m.MaSanPham
-                    }).ToList()
-                })
-                .ToListAsync();
+                        _logger.LogWarning("Danh mục không tồn tại hoặc đã bị vô hiệu hóa: MaDanhMuc={MaDanhMuc}", maDanhMuc);
+                        return new List<SanPhamView>();
+                    }
+
+                    var query = _context.SanPhams
+                        .AsNoTracking()
+                        .Include(sp => sp.DanhMucLoai)
+                        .Include(sp => sp.DanhMucThuongHieu)
+                        .Include(sp => sp.DanhMucHashtag)
+                        .Include(sp => sp.Medias)
+                        .Include(sp => sp.BienThes)
+                            .ThenInclude(bt => bt.DanhMucMau)
+                        .Include(sp => sp.BienThes)
+                            .ThenInclude(bt => bt.DanhMucKichThuoc)
+                        .Include(sp => sp.BinhLuans)
+                        .Where(sp => sp.TrangThai == 1);
+
+                    if (danhMuc.LoaiDanhMuc == 1)
+                    {
+                        query = query.Where(sp => sp.MaLoai == maDanhMuc);
+                    }
+                    else if (danhMuc.LoaiDanhMuc == 2)
+                    {
+                        query = query.Where(sp => sp.MaThuongHieu == maDanhMuc);
+                    }
+                    else if (danhMuc.LoaiDanhMuc == 3)
+                    {
+                        query = query.Where(sp => sp.MaHashtag == maDanhMuc);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Loại danh mục không hợp lệ: MaDanhMuc={MaDanhMuc}, LoaiDanhMuc={LoaiDanhMuc}", maDanhMuc, danhMuc.LoaiDanhMuc);
+                        return new List<SanPhamView>();
+                    }
+
+                    var sanPhams = await query
+                        .OrderByDescending(sp => sp.NgayTao) // 🔥 Sắp xếp sản phẩm mới nhất lên đầu
+                        .ToListAsync();
+
+                    return sanPhams.Select(MapToView).ToList();
+
+                }, TimeSpan.FromMinutes(10));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy sản phẩm theo danh mục: MaDanhMuc={MaDanhMuc}, StackTrace: {StackTrace}", maDanhMuc, ex.StackTrace);
+                throw;
+            }
+        }
+
+        public async Task<List<SanPhamView>> GetBestSellingAsync(int limit)
+        {
+            _logger.LogInformation("Lấy danh sách sản phẩm bán chạy, Giới hạn: {Limit}", limit);
+
+            try
+            {
+                return await _cacheServices.GetOrCreateAsync($"SanPham_BestSelling_{limit}", async () =>
+                {
+                    var sanPhams = await _context.SanPhams
+                        .AsNoTracking()
+                        .Include(sp => sp.DanhMucLoai)
+                        .Include(sp => sp.DanhMucThuongHieu)
+                        .Include(sp => sp.DanhMucHashtag)
+                        .Include(sp => sp.Medias)
+                        .Include(sp => sp.BienThes)
+                            .ThenInclude(bt => bt.DanhMucMau)
+                        .Include(sp => sp.BienThes)
+                            .ThenInclude(bt => bt.DanhMucKichThuoc)
+                        .Include(sp => sp.BinhLuans)
+                        .Where(sp => sp.TrangThai == 1)
+                        .OrderByDescending(sp => sp.BienThes.Sum(bt => bt.SoLuongBan))
+                        .Take(limit)
+                        .ToListAsync();
+
+                    return sanPhams.Select(MapToView).ToList();
+                }, TimeSpan.FromMinutes(10));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy sản phẩm bán chạy, StackTrace: {StackTrace}", ex.StackTrace);
+                throw;
+            }
+        }
+
+        private async Task<bool> IsValidDanhMuc(int maDanhMuc, int loaiDanhMuc)
+        {
+            return await _context.DanhMucs
+                .AsNoTracking()
+                .AnyAsync(dm => dm.MaDanhMuc == maDanhMuc && dm.LoaiDanhMuc == loaiDanhMuc && dm.TrangThai == 1);
+        }
+
+        private string GenerateSlug(string input)
+        {
+            string slug = input.ToLowerInvariant();
+            slug = System.Text.RegularExpressions.Regex.Replace(slug, @"[^a-z0-9\s-]", "");
+            slug = System.Text.RegularExpressions.Regex.Replace(slug, @"\s+", "-").Trim('-');
+            slug = System.Text.RegularExpressions.Regex.Replace(slug, "-+", "-");
+            return slug;
+        }
+
+        private async Task<string> GetUniqueSlugAsync(string baseSlug)
+        {
+            string slug = baseSlug;
+            int count = 1;
+
+            while (await _context.SanPhams.AnyAsync(sp => sp.Slug == slug && sp.TrangThai == 1))
+            {
+                slug = $"{baseSlug}-{count}";
+                count++;
+            }
+
+            return slug;
+        }
+
+        public async Task<List<SanPhamView>> GetByLoaiAndThuongHieuAsync(int maLoai, int maThuongHieu)
+        {
+            _logger.LogInformation("Lấy sản phẩm theo loại và thương hiệu: MaLoai={MaLoai}, MaThuongHieu={MaThuongHieu}", maLoai, maThuongHieu);
+
+            try
+            {
+                return await _cacheServices.GetOrCreateAsync($"SanPham_Loai_ThuongHieu_{maLoai}_{maThuongHieu}", async () =>
+                {
+                    // Validate danh mục
+                    var loaiExists = await _context.DanhMucs
+                        .AsNoTracking()
+                        .AnyAsync(dm => dm.MaDanhMuc == maLoai && dm.LoaiDanhMuc == 1 && dm.TrangThai == 1);
+                    var thuongHieuExists = await _context.DanhMucs
+                        .AsNoTracking()
+                        .AnyAsync(dm => dm.MaDanhMuc == maThuongHieu && dm.LoaiDanhMuc == 2 && dm.TrangThai == 1);
+
+                    if (!loaiExists || !thuongHieuExists)
+                    {
+                        _logger.LogWarning("Loại sản phẩm hoặc thương hiệu không hợp lệ: MaLoai={MaLoai}, MaThuongHieu={MaThuongHieu}", maLoai, maThuongHieu);
+                        return new List<SanPhamView>();
+                    }
+
+                    var sanPhams = await _context.SanPhams
+                        .AsNoTracking()
+                        .Include(sp => sp.DanhMucLoai)
+                        .Include(sp => sp.DanhMucThuongHieu)
+                        .Include(sp => sp.DanhMucHashtag)
+                        .Include(sp => sp.Medias)
+                        .Include(sp => sp.BienThes)
+                            .ThenInclude(bt => bt.DanhMucMau)
+                        .Include(sp => sp.BienThes)
+                            .ThenInclude(bt => bt.DanhMucKichThuoc)
+                        .Include(sp => sp.BinhLuans)
+                        .Where(sp => sp.TrangThai == 1 && sp.MaLoai == maLoai && sp.MaThuongHieu == maThuongHieu)
+                        .OrderByDescending(sp => sp.NgayTao) // 🔥 Sắp xếp mới nhất lên đầu
+                        .ToListAsync();
+
+
+                    return sanPhams.Select(MapToView).ToList();
+                }, TimeSpan.FromMinutes(10));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy sản phẩm theo loại và thương hiệu: MaLoai={MaLoai}, MaThuongHieu={MaThuongHieu}, StackTrace: {StackTrace}",
+                    maLoai, maThuongHieu, ex.StackTrace);
+                throw;
+            }
+        }
+
+        private SanPhamView MapToView(SanPham sanPham)
+        {
+            return new SanPhamView
+            {
+                MaSanPham = sanPham.MaSanPham,
+                TenSanPham = sanPham.TenSanPham,
+                MoTa = sanPham.MoTa,
+                Slug = sanPham.Slug,
+                ChatLieu = sanPham.ChatLieu,
+                NgayTao = sanPham.NgayTao,
+                TrangThai = sanPham.TrangThai,
+                GioiTinh = sanPham.GioiTinh,
+                MaLoai = sanPham.MaLoai,
+                TenLoai = sanPham.DanhMucLoai?.TenDanhMuc,
+                HinhAnhLoai = sanPham.DanhMucLoai?.HinhAnh,
+                MaThuongHieu = sanPham.MaThuongHieu,
+                TenThuongHieu = sanPham.DanhMucThuongHieu?.TenDanhMuc,
+                HinhAnhThuongHieu = sanPham.DanhMucThuongHieu?.HinhAnh,
+                MaHashtag = sanPham.MaHashtag,
+                TenHashtag = sanPham.DanhMucHashtag?.TenDanhMuc,
+                HinhAnhHashtag = sanPham.DanhMucHashtag?.HinhAnh,
+                Medias = sanPham.Medias?.Select(m => new MediaView
+                {
+                    MaMedia = m.MaMedia,
+                    MaSanPham = m.MaSanPham,
+                    TenSanPham = sanPham.TenSanPham,
+                    LoaiMedia = m.LoaiMedia,
+                    DuongDan = m.DuongDan,
+                    AltMedia = m.AltMedia,
+                    TrangThai = m.TrangThai,
+                    NgayTao = m.NgayTao
+                }).ToList() ?? new List<MediaView>(),
+                BienThes = sanPham.BienThes?.Select(bt => new BienTheView
+                {
+                    MaBienThe = bt.MaBienThe,
+                    HinhAnh = bt.HinhAnh,
+                    GiaBan = bt.GiaBan,
+                    GiaNhap = bt.GiaNhap,
+                    SoLuongNhap = bt.SoLuongNhap,
+                    SoLuongBan = bt.SoLuongBan,
+                    KhuyenMai = bt.KhuyenMai,
+                    MaVach = bt.MaVach,
+                    TrangThai = bt.TrangThai,
+                    NgayTao = bt.NgayTao,
+                    MaSanPham = bt.MaSanPham ?? 0,
+                    GiaTri = bt.GiaBan - (bt.GiaBan * (bt.KhuyenMai / 100)),
+                    MaMau = bt.MaMau,
+                    TenMau = bt.DanhMucMau?.TenDanhMuc,
+                    HinhAnhMau = bt.DanhMucMau?.HinhAnh,
+                    MaKichThuoc = bt.MaKichThuoc,
+                    TenKichThuoc = bt.DanhMucKichThuoc?.TenDanhMuc,
+                    HinhAnhKichThuoc = bt.DanhMucKichThuoc?.HinhAnh
+                }).ToList() ?? new List<BienTheView>(),
+                TongSoLuongBan = sanPham.BienThes?.Sum(bt => bt.SoLuongBan),
+                TongSoLuongNhap = sanPham.BienThes?.Sum(bt => bt.SoLuongNhap),
+                SoLuongDanhGia = sanPham.BinhLuans != null ? sanPham.BinhLuans.Count(bl => bl.DanhGia.HasValue) : 0,
+                DanhGiaTrungBinh = sanPham.BinhLuans != null && sanPham.BinhLuans.Any(bl => bl.DanhGia.HasValue)
+                ? (decimal?)Convert.ToDecimal(
+                    sanPham.BinhLuans
+                        .Where(bl => bl.DanhGia.HasValue)
+                        .Average(bl => (double)bl.DanhGia.Value)
+                    )
+                : null
+            };
         }
     }
 }

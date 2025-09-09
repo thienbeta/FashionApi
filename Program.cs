@@ -1,14 +1,15 @@
-using FashionApi.Data;
+﻿using FashionApi.Data;
 using FashionApi.Repository;
 using FashionApi.Services;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
-using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -26,36 +27,11 @@ builder.Services.AddSwaggerGen(c =>
     {
         Title = "Fashion API",
         Version = "v1",
-        Description = "API for managing fashion products, brands, and related entities",
+        Description = "API quản lý sản phẩm thời trang, thương hiệu và các thực thể liên quan",
         Contact = new OpenApiContact
         {
-            Name = "Your Name",
+            Name = "Tên của bạn",
             Email = "your-email@example.com"
-        }
-    });
-
-    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
-        Name = "Authorization",
-        Type = SecuritySchemeType.Http,
-        Scheme = "Bearer",
-        BearerFormat = "JWT",
-        In = ParameterLocation.Header,
-        Description = "Nh?p token (Bearer <your_token>)"
-    });
-
-    c.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
-        {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            },
-            Array.Empty<string>()
         }
     });
 
@@ -69,55 +45,25 @@ builder.Services.AddSwaggerGen(c =>
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", corsBuilder =>
+    options.AddPolicy("AllowAllLocalhost", corsBuilder =>
     {
-        corsBuilder.SetIsOriginAllowed(origin =>
-        {
-            if (origin.Contains("localhost")) return true;
-            if (origin == "https://fashion.vn") return true;
-            if (origin == "https://admin.your-production-domain.com") return true;
-            return false;
-        })
-        .AllowAnyHeader()
-        .AllowAnyMethod()
-        .AllowCredentials();
+        corsBuilder
+            .AllowAnyOrigin()  // Cho phép tất cả các nguồn gốc
+            .AllowAnyHeader()  // Cho phép tất cả các header
+            .AllowAnyMethod(); // Cho phép tất cả các phương thức HTTP
     });
 });
 
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = builder.Configuration["Jwt:Issuer"],
-        ValidAudience = builder.Configuration["Jwt:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
-    };
-});
+builder.Services.AddMemoryCache();
 
-builder.Services.AddDistributedMemoryCache();
-builder.Services.AddSession(options =>
-{
-    options.IdleTimeout = TimeSpan.FromMinutes(30);
-    options.Cookie.HttpOnly = true;
-    options.Cookie.IsEssential = true;
-});
-
-builder.Services.AddScoped<IHashtagServices, HashtagServices>();
-builder.Services.AddScoped<IKichThuocServices, KichThuocServices>();
-builder.Services.AddScoped<IThuongHieuServices, ThuongHieuServices>();
-builder.Services.AddScoped<ILoaiServices, LoaiServices>();
-builder.Services.AddScoped<IMauServices, MauServices>();
+builder.Services.AddScoped<IMediaServices, MediaServices>();
+builder.Services.AddScoped<IMemoryCacheServices, MemoryCacheServices>();
+builder.Services.AddScoped<IDanhMucServices, DanhMucServices>();
+builder.Services.AddScoped<IBienTheServices, BienTheServices>();
 builder.Services.AddScoped<ISanPhamServices, SanPhamServices>();
-
+builder.Services.AddScoped<INguoiDungServices, NguoiDungServices>();
+builder.Services.AddScoped<EmailService>();
+builder.Services.AddScoped<IBinhLuanServices, BinhLuanServices>();
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -127,27 +73,65 @@ if (app.Environment.IsDevelopment())
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "Fashion API v1");
         c.RoutePrefix = "swagger";
+        c.InjectStylesheet("/swagger-ui/swagger-ui.css");
     });
 }
 
-
-app.UseHttpsRedirection();
 app.UseStaticFiles();
+app.UseHttpsRedirection();
 app.UseRouting();
-app.UseCors("AllowAll");
-app.UseSession();
-app.UseAuthentication();
-app.UseAuthorization();
+app.UseCors("AllowAllLocalhost");
 app.MapControllers();
 
 app.UseExceptionHandler(errorApp =>
 {
     errorApp.Run(async context =>
     {
-        context.Response.StatusCode = 500;
-        context.Response.ContentType = "application/json";
-        await context.Response.WriteAsync("?� x?y ra l?i.");
+        var error = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+        if (error != null)
+        {
+            var logger = context.RequestServices.GetService<ILogger<Program>>();
+            logger.LogError(error.Error, "Lỗi không xử lý được: {ErrorMessage}", error.Error.Message);
+            context.Response.StatusCode = 500;
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsJsonAsync(new
+            {
+                Message = "Lỗi máy chủ nội bộ",
+                Detail = app.Environment.IsDevelopment() ? error.Error.Message : "Đã xảy ra lỗi không mong muốn"
+            });
+        }
     });
 });
+
+app.MapGet("/health", async (ApplicationDbContext context, ILogger<Program> logger) =>
+{
+    try
+    {
+        var canConnect = await context.Database.CanConnectAsync();
+        logger.LogInformation("Kiểm tra kết nối cơ sở dữ liệu: {CanConnect}", canConnect);
+        return Results.Ok(new { DatabaseConnected = canConnect, Status = "Khỏe mạnh" });
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Lỗi khi kiểm tra kết nối cơ sở dữ liệu: {ErrorMessage}", ex.Message);
+        return Results.StatusCode(500);
+    }
+});
+
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    try
+    {
+        await dbContext.Database.MigrateAsync();
+        logger.LogInformation("Áp dụng migration thành công");
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Lỗi khi áp dụng migration: {ErrorMessage}", ex.Message);
+        throw;
+    }
+}
 
 app.Run("http://0.0.0.0:5083");

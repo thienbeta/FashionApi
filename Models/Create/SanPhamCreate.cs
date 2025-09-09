@@ -5,51 +5,23 @@ namespace FashionApi.Models.Create
     public class SanPhamCreate
     {
         [Required]
-        public string MaSanPham { get; set; }
-
-        [Required]
+        [StringLength(200, ErrorMessage = "Tên sản phẩm không được vượt quá 200 ký tự")]
         public string TenSanPham { get; set; }
 
+        [StringLength(10000, ErrorMessage = "Mô tả không được vượt quá 10,000 ký tự")]
         public string? MoTa { get; set; }
 
-        public string? HinhAnh { get; set; }
-
-        [Range(0, double.MaxValue)]
-        public decimal GiaBan { get; set; }
-
-        [Range(0, double.MaxValue)]
-        public decimal GiaNhap { get; set; }
-
-        [Range(0, int.MaxValue)]
-        public int SoLuongNhap { get; set; }
-
-        [Range(0, double.MaxValue)]
-        public decimal SoLuongSale { get; set; }
-
-        [Range(0, 100)]
-        public double PhanTramSale { get; set; }
-
-        [Required]
-        public string Slug { get; set; }
-
-        [Required]
+        [StringLength(100, ErrorMessage = "Chất liệu không được vượt quá 100 ký tự")]
         public string ChatLieu { get; set; }
 
-        [Range(0, 3)]
-        public int? GioiTinh { get; set; } = 0; // mặc định là 0
+        [Range(0, 3, ErrorMessage = "Giới tính phải từ 0 đến 3")]
+        public int GioiTinh { get; set; } // 0: Mặc định, 1: Nam, 2: Nữ, 3: Khác
 
-        [Required]
-        public int MaKichThuoc { get; set; }
-
-        [Required]
-        public int MaMau { get; set; }
-
-        [Required]
-        public int MaThuongHieu { get; set; }
-
-        [Required]
         public int MaLoai { get; set; }
-
+        public int MaThuongHieu { get; set; }
         public int? MaHashtag { get; set; }
+
+        public List<IFormFile>? Images { get; set; }  // Danh sách hình ảnh tải lên
+
     }
 }
