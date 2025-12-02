@@ -45,7 +45,6 @@ namespace FashionApi.DTO
         [NotMapped]
         public IEnumerable<Media> MediaHinhAnh => Medias?.Where(m => m.LoaiMedia == "image");
 
-        public virtual ICollection<BienThe> BienThes { get; set; } = new List<BienThe>();
 
         public virtual ICollection<BinhLuan> BinhLuans { get; set; } = new List<BinhLuan>();
     }

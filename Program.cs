@@ -60,7 +60,6 @@ builder.Services.AddMemoryCache();
 builder.Services.AddScoped<IMediaServices, MediaServices>();
 builder.Services.AddScoped<IMemoryCacheServices, MemoryCacheServices>();
 builder.Services.AddScoped<IDanhMucServices, DanhMucServices>();
-builder.Services.AddScoped<IBienTheServices, BienTheServices>();
 builder.Services.AddScoped<ISanPhamServices, SanPhamServices>();
 builder.Services.AddScoped<INguoiDungServices, NguoiDungServices>();
 builder.Services.AddScoped<EmailService>();

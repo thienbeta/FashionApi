@@ -1,4 +1,10 @@
-﻿using FashionApi.Data;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using FashionApi.Data;
 using FashionApi.DTO;
 using FashionApi.Models.Create;
 using FashionApi.Models.Edit;
@@ -7,12 +13,6 @@ using FashionApi.Repository;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace FashionApi.Services
 {
@@ -222,16 +222,6 @@ namespace FashionApi.Services
                 {
                     _logger.LogWarning("Không thể xóa danh mục vì đang được sử dụng trong SanPham: MaDanhMuc={Id}", id);
                     throw new InvalidOperationException("Danh mục đang được sử dụng trong sản phẩm.");
-                }
-
-                var isUsedInBienThe = await _context.BienThes
-                    .AsNoTracking()
-                    .AnyAsync(bt => bt.MaMau == id || bt.MaKichThuoc == id);
-
-                if (isUsedInBienThe)
-                {
-                    _logger.LogWarning("Không thể xóa danh mục vì đang được sử dụng trong BienThe: MaDanhMuc={Id}", id);
-                    throw new InvalidOperationException("Danh mục đang được sử dụng trong biến thể.");
                 }
 
                 if (!string.IsNullOrEmpty(danhMuc.HinhAnh))

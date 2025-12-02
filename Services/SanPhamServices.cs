@@ -1,4 +1,9 @@
-﻿using FashionApi.Data;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using FashionApi.Data;
 using FashionApi.DTO;
 using FashionApi.Models.Create;
 using FashionApi.Models.Edit;
@@ -7,11 +12,6 @@ using FashionApi.Repository;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace FashionApi.Services
 {
@@ -20,20 +20,17 @@ namespace FashionApi.Services
         private readonly ApplicationDbContext _context;
         private readonly IMediaServices _mediaServices;
         private readonly IMemoryCacheServices _cacheServices;
-        private readonly IBienTheServices _bienTheServices;
         private readonly ILogger<SanPhamServices> _logger;
 
         public SanPhamServices(
             ApplicationDbContext context,
             IMediaServices mediaServices,
             IMemoryCacheServices cacheServices,
-            IBienTheServices bienTheServices,
             ILogger<SanPhamServices> logger)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
             _mediaServices = mediaServices ?? throw new ArgumentNullException(nameof(mediaServices));
             _cacheServices = cacheServices ?? throw new ArgumentNullException(nameof(cacheServices));
-            _bienTheServices = bienTheServices ?? throw new ArgumentNullException(nameof(bienTheServices));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -259,7 +256,6 @@ namespace FashionApi.Services
             {
                 var sanPham = await _context.SanPhams
                     .Include(sp => sp.Medias)
-                    .Include(sp => sp.BienThes)
                     .FirstOrDefaultAsync(sp => sp.MaSanPham == id);
 
                 if (sanPham == null)
@@ -270,10 +266,6 @@ namespace FashionApi.Services
 
                 // Soft delete
                 sanPham.TrangThai = 0;
-                foreach (var bienThe in sanPham.BienThes)
-                {
-                    bienThe.TrangThai = 0;
-                }
                 foreach (var media in sanPham.Medias)
                 {
                     media.TrangThai = 0;
@@ -311,10 +303,6 @@ namespace FashionApi.Services
                         .Include(sp => sp.DanhMucThuongHieu)
                         .Include(sp => sp.DanhMucHashtag)
                         .Include(sp => sp.Medias)
-                        .Include(sp => sp.BienThes)
-                            .ThenInclude(bt => bt.DanhMucMau)
-                        .Include(sp => sp.BienThes)
-                            .ThenInclude(bt => bt.DanhMucKichThuoc)
                         .Include(sp => sp.BinhLuans)
                         .FirstOrDefaultAsync(sp => sp.MaSanPham == id);
 
@@ -348,10 +336,6 @@ namespace FashionApi.Services
                         .Include(sp => sp.DanhMucThuongHieu)
                         .Include(sp => sp.DanhMucHashtag)
                         .Include(sp => sp.Medias)
-                        .Include(sp => sp.BienThes)
-                            .ThenInclude(bt => bt.DanhMucMau)
-                        .Include(sp => sp.BienThes)
-                            .ThenInclude(bt => bt.DanhMucKichThuoc)
                         .Include(sp => sp.BinhLuans)
                         .OrderByDescending(sp => sp.NgayTao)
                         .ToListAsync();
@@ -366,10 +350,10 @@ namespace FashionApi.Services
             }
         }
 
-        public async Task<List<SanPhamView>> SearchAsync(decimal? giaBan, int? soLuongNhap, int? trangThai, string? maVach, int? maSanPham, string? tenSanPham)
+        public async Task<List<SanPhamView>> SearchAsync(int? trangThai, int? maSanPham, string? tenSanPham)
         {
-            _logger.LogInformation("Tìm kiếm sản phẩm: GiaBan={GiaBan}, SoLuongNhap={SoLuongNhap}, TrangThai={TrangThai}, MaVach={MaVach}, MaSanPham={MaSanPham}, TenSanPham={TenSanPham}",
-                giaBan, soLuongNhap, trangThai, maVach, maSanPham, tenSanPham);
+            _logger.LogInformation("Tìm kiếm sản phẩm: TrangThai={TrangThai}, MaSanPham={MaSanPham}, TenSanPham={TenSanPham}",
+                trangThai, maSanPham, tenSanPham);
 
             try
             {
@@ -379,31 +363,12 @@ namespace FashionApi.Services
                     .Include(sp => sp.DanhMucThuongHieu)
                     .Include(sp => sp.DanhMucHashtag)
                     .Include(sp => sp.Medias)
-                    .Include(sp => sp.BienThes)
-                        .ThenInclude(bt => bt.DanhMucMau)
-                    .Include(sp => sp.BienThes)
-                        .ThenInclude(bt => bt.DanhMucKichThuoc)
                     .Include(sp => sp.BinhLuans)
                     .AsQueryable();
-
-                if (giaBan.HasValue)
-                {
-                    query = query.Where(sp => sp.BienThes.Any(bt => bt.GiaBan <= giaBan.Value));
-                }
-
-                if (soLuongNhap.HasValue)
-                {
-                    query = query.Where(sp => sp.BienThes.Any(bt => bt.SoLuongNhap >= soLuongNhap.Value));
-                }
 
                 if (trangThai.HasValue)
                 {
                     query = query.Where(sp => sp.TrangThai == trangThai.Value);
-                }
-
-                if (!string.IsNullOrEmpty(maVach))
-                {
-                    query = query.Where(sp => sp.BienThes.Any(bt => bt.MaVach == maVach));
                 }
 
                 if (maSanPham.HasValue)
@@ -454,10 +419,6 @@ namespace FashionApi.Services
                     .Include(sp => sp.DanhMucThuongHieu)
                     .Include(sp => sp.DanhMucHashtag)
                     .Include(sp => sp.Medias)
-                    .Include(sp => sp.BienThes)
-                        .ThenInclude(bt => bt.DanhMucMau)
-                    .Include(sp => sp.BienThes)
-                        .ThenInclude(bt => bt.DanhMucKichThuoc)
                     .Include(sp => sp.BinhLuans)
                     .Where(sp => sp.TrangThai == 1);
 
@@ -517,10 +478,6 @@ namespace FashionApi.Services
                         .Include(sp => sp.DanhMucThuongHieu)
                         .Include(sp => sp.DanhMucHashtag)
                         .Include(sp => sp.Medias)
-                        .Include(sp => sp.BienThes)
-                            .ThenInclude(bt => bt.DanhMucMau)
-                        .Include(sp => sp.BienThes)
-                            .ThenInclude(bt => bt.DanhMucKichThuoc)
                         .Include(sp => sp.BinhLuans)
                         .Where(sp => sp.TrangThai == 1);
 
@@ -571,13 +528,9 @@ namespace FashionApi.Services
                         .Include(sp => sp.DanhMucThuongHieu)
                         .Include(sp => sp.DanhMucHashtag)
                         .Include(sp => sp.Medias)
-                        .Include(sp => sp.BienThes)
-                            .ThenInclude(bt => bt.DanhMucMau)
-                        .Include(sp => sp.BienThes)
-                            .ThenInclude(bt => bt.DanhMucKichThuoc)
                         .Include(sp => sp.BinhLuans)
                         .Where(sp => sp.TrangThai == 1)
-                        .OrderByDescending(sp => sp.BienThes.Sum(bt => bt.SoLuongBan))
+                        .OrderByDescending(sp => sp.NgayTao)
                         .Take(limit)
                         .ToListAsync();
 
@@ -649,10 +602,6 @@ namespace FashionApi.Services
                         .Include(sp => sp.DanhMucThuongHieu)
                         .Include(sp => sp.DanhMucHashtag)
                         .Include(sp => sp.Medias)
-                        .Include(sp => sp.BienThes)
-                            .ThenInclude(bt => bt.DanhMucMau)
-                        .Include(sp => sp.BienThes)
-                            .ThenInclude(bt => bt.DanhMucKichThuoc)
                         .Include(sp => sp.BinhLuans)
                         .Where(sp => sp.TrangThai == 1 && sp.MaLoai == maLoai && sp.MaThuongHieu == maThuongHieu)
                         .OrderByDescending(sp => sp.NgayTao) // 🔥 Sắp xếp mới nhất lên đầu
@@ -702,29 +651,6 @@ namespace FashionApi.Services
                     TrangThai = m.TrangThai,
                     NgayTao = m.NgayTao
                 }).ToList() ?? new List<MediaView>(),
-                BienThes = sanPham.BienThes?.Select(bt => new BienTheView
-                {
-                    MaBienThe = bt.MaBienThe,
-                    HinhAnh = bt.HinhAnh,
-                    GiaBan = bt.GiaBan,
-                    GiaNhap = bt.GiaNhap,
-                    SoLuongNhap = bt.SoLuongNhap,
-                    SoLuongBan = bt.SoLuongBan,
-                    KhuyenMai = bt.KhuyenMai,
-                    MaVach = bt.MaVach,
-                    TrangThai = bt.TrangThai,
-                    NgayTao = bt.NgayTao,
-                    MaSanPham = bt.MaSanPham ?? 0,
-                    GiaTri = bt.GiaBan - (bt.GiaBan * (bt.KhuyenMai / 100)),
-                    MaMau = bt.MaMau,
-                    TenMau = bt.DanhMucMau?.TenDanhMuc,
-                    HinhAnhMau = bt.DanhMucMau?.HinhAnh,
-                    MaKichThuoc = bt.MaKichThuoc,
-                    TenKichThuoc = bt.DanhMucKichThuoc?.TenDanhMuc,
-                    HinhAnhKichThuoc = bt.DanhMucKichThuoc?.HinhAnh
-                }).ToList() ?? new List<BienTheView>(),
-                TongSoLuongBan = sanPham.BienThes?.Sum(bt => bt.SoLuongBan),
-                TongSoLuongNhap = sanPham.BienThes?.Sum(bt => bt.SoLuongNhap),
                 SoLuongDanhGia = sanPham.BinhLuans != null ? sanPham.BinhLuans.Count(bl => bl.DanhGia.HasValue) : 0,
                 DanhGiaTrungBinh = sanPham.BinhLuans != null && sanPham.BinhLuans.Any(bl => bl.DanhGia.HasValue)
                 ? (decimal?)Convert.ToDecimal(

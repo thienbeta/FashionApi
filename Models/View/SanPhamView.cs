@@ -34,11 +34,6 @@ namespace FashionApi.Models.View
 
         public List<MediaView> Medias { get; set; } = new List<MediaView>();
 
-        public List<BienTheView> BienThes { get; set; } = new List<BienTheView>();
-
-        public int? TongSoLuongBan { get; set; } // Tổng số lượng bán từ tất cả các biến thể
-        public int? TongSoLuongNhap { get; set; } // Tổng số lượng nhập từ tất cả các biến thể
-
         public decimal? DanhGiaTrungBinh { get; set; } // Đánh giá trung bình từ tất cả các bình luận
         public int? SoLuongDanhGia { get; set; } // Số lượng đánh giá từ tất cả các bình luận
 

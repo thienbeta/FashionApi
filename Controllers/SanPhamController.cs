@@ -1,12 +1,12 @@
-﻿using FashionApi.Models.Create;
+﻿using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using FashionApi.Models.Create;
 using FashionApi.Models.Edit;
 using FashionApi.Models.View;
 using FashionApi.Repository;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace FashionApi.Controllers
 {
@@ -175,19 +175,16 @@ namespace FashionApi.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> Search(
-            [FromQuery] decimal? giaBan,
-            [FromQuery] int? soLuongNhap,
             [FromQuery] int? trangThai,
-            [FromQuery] string? maVach,
             [FromQuery] int? maSanPham,
             [FromQuery] string? tenSanPham)
         {
             try
             {
-                var sanPhams = await _sanPhamServices.SearchAsync(giaBan, soLuongNhap, trangThai, maVach, maSanPham, tenSanPham);
+                var sanPhams = await _sanPhamServices.SearchAsync(trangThai, maSanPham, tenSanPham);
                 _logger.LogInformation(
-                    "Tìm kiếm sản phẩm thành công, Số lượng: {Count}, GiaBan={GiaBan}, SoLuongNhap={SoLuongNhap}, TrangThai={TrangThai}, MaVach={MaVach}, MaSanPham={MaSanPham}, TenSanPham={TenSanPham}",
-                    sanPhams.Count, giaBan, soLuongNhap, trangThai, maVach, maSanPham, tenSanPham);
+                    "Tìm kiếm sản phẩm thành công, Số lượng: {Count}, TrangThai={TrangThai}, MaSanPham={MaSanPham}, TenSanPham={TenSanPham}",
+                    sanPhams.Count, trangThai, maSanPham, tenSanPham);
                 return Ok(sanPhams);
             }
             catch (ArgumentException ex)
