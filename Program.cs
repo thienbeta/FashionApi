@@ -1,9 +1,9 @@
-﻿using FashionApi.Data;
+﻿using System.Reflection;
+using FashionApi.Data;
 using FashionApi.Repository;
 using FashionApi.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
-using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,7 +12,8 @@ builder.Logging.AddConsole();
 builder.Logging.AddDebug();
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    // options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnectionDocker")));
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
