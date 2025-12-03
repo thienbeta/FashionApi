@@ -1,12 +1,14 @@
-﻿using FashionApi.Models.Create;
+﻿using System;
+using System.Collections.Generic;
+using System.Security.Claims;
+using System.Threading.Tasks;
+using FashionApi.Models.Create;
 using FashionApi.Models.Edit;
 using FashionApi.Models.View;
 using FashionApi.Repository;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace FashionApi.Controllers
 {
@@ -23,6 +25,11 @@ namespace FashionApi.Controllers
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
+        /// <summary>
+        /// Tạo mới người dùng
+        /// </summary>
+        /// <param name="model">Thông tin tạo người dùng</param>
+        /// <returns>Kết quả tạo người dùng</returns>
         [HttpPost]
         public async Task<IActionResult> Create([FromForm] NguoiDungCreate model)
         {
@@ -46,7 +53,14 @@ namespace FashionApi.Controllers
         }
 
 
-        // Cập nhật người dùng
+        /// <summary>
+        /// Cập nhật thông tin người dùng - user tự cập nhật hoặc admin cập nhật user khác
+        /// </summary>
+        /// <param name="id">ID người dùng</param>
+        /// <param name="model">Thông tin cập nhật</param>
+        /// <param name="imageFile">File ảnh đại diện (tùy chọn)</param>
+        /// <returns>Kết quả cập nhật người dùng</returns>
+        [Authorize]
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, [FromForm] NguoiDungEdit model, IFormFile imageFile = null)
         {
@@ -60,6 +74,19 @@ namespace FashionApi.Controllers
             {
                 _logger.LogWarning("ID không khớp với dữ liệu chỉnh sửa: Id={Id}, MaNguoiDung={MaNguoiDung}", id, model.MaNguoiDung);
                 return BadRequest(new { Message = "ID không khớp với dữ liệu chỉnh sửa." });
+            }
+
+            // Kiểm tra quyền: admin hoặc chính user đó
+            var currentUserIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (currentUserIdClaim == null || !int.TryParse(currentUserIdClaim.Value, out var currentUserId))
+            {
+                return Unauthorized(new { Message = "Không thể xác định người dùng hiện tại." });
+            }
+
+            var currentUserRole = User.FindFirst(ClaimTypes.Role)?.Value;
+            if (currentUserRole != "Admin" && currentUserId != id)
+            {
+                return Forbid("Bạn không có quyền cập nhật thông tin của người dùng khác.");
             }
 
             try
@@ -80,7 +107,12 @@ namespace FashionApi.Controllers
             }
         }
 
-        // Xóa người dùng
+        /// <summary>
+        /// Xóa người dùng - chỉ admin
+        /// </summary>
+        /// <param name="id">ID người dùng cần xóa</param>
+        /// <returns>Kết quả xóa người dùng</returns>
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
@@ -103,7 +135,12 @@ namespace FashionApi.Controllers
             }
         }
 
-        // Lấy người dùng theo ID
+        /// <summary>
+        /// Lấy thông tin người dùng theo ID - yêu cầu đăng nhập
+        /// </summary>
+        /// <param name="id">ID người dùng</param>
+        /// <returns>Thông tin người dùng</returns>
+        [Authorize]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
@@ -126,9 +163,14 @@ namespace FashionApi.Controllers
             }
         }
 
-        // Lấy tất cả người dùng
+        /// <summary>
+        /// Lấy danh sách tất cả người dùng - chỉ admin
+        /// </summary>
+        /// <returns>Danh sách người dùng</returns>
+        [Authorize(Roles = "Admin")]
         [HttpGet]
         public async Task<IActionResult> GetAll()
+
         {
             try
             {
@@ -143,7 +185,12 @@ namespace FashionApi.Controllers
             }
         }
 
-        // Tìm kiếm người dùng
+        /// <summary>
+        /// Tìm kiếm người dùng theo từ khóa - chỉ admin
+        /// </summary>
+        /// <param name="keyword">Từ khóa tìm kiếm</param>
+        /// <returns>Danh sách người dùng phù hợp</returns>
+        [Authorize(Roles = "Admin")]
         [HttpGet("search")]
         public async Task<IActionResult> Search([FromQuery] string keyword)
         {
@@ -160,7 +207,12 @@ namespace FashionApi.Controllers
             }
         }
 
-        // Lọc người dùng theo vai trò
+        /// <summary>
+        /// Lọc người dùng theo vai trò - chỉ admin
+        /// </summary>
+        /// <param name="role">Vai trò cần lọc (1=Admin, 2=User)</param>
+        /// <returns>Danh sách người dùng theo vai trò</returns>
+        [Authorize(Roles = "Admin")]
         [HttpGet("filter/role/{role}")]
         public async Task<IActionResult> FilterByRole(int role)
         {
@@ -177,7 +229,11 @@ namespace FashionApi.Controllers
             }
         }
 
-        // Đăng nhập người dùng
+        /// <summary>
+        /// Đăng nhập người dùng
+        /// </summary>
+        /// <param name="model">Thông tin đăng nhập</param>
+        /// <returns>Token và thông tin người dùng đã đăng nhập</returns>
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] DangNhap model)
         {
@@ -206,7 +262,11 @@ namespace FashionApi.Controllers
             }
         }
 
-        // Gửi OTP quên mật khẩu
+        /// <summary>
+        /// Gửi OTP để đặt lại mật khẩu
+        /// </summary>
+        /// <param name="email">Email người dùng</param>
+        /// <returns>Kết quả gửi OTP</returns>
         [HttpPost("forgot-password")]
         public async Task<IActionResult> ForgotPassword([FromBody] string email)
         {
@@ -228,7 +288,11 @@ namespace FashionApi.Controllers
             }
         }
 
-        // Đặt lại mật khẩu với OTP
+        /// <summary>
+        /// Đặt lại mật khẩu với OTP
+        /// </summary>
+        /// <param name="model">Thông tin đặt lại mật khẩu</param>
+        /// <returns>Kết quả đặt lại mật khẩu</returns>
         [HttpPost("reset-password")]
         public async Task<IActionResult> ResetPassword([FromBody] QuenMatKhau model)
         {
