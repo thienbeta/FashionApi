@@ -8,5 +8,7 @@
         public string? HinhAnh { get; set; }
         public DateTime NgayTao { get; set; }
         public int TrangThai { get; set; } // 1: Kích hoạt, 0: Vô hiệu hóa
+
+        public List<SanPhamView> SanPhams { get; set; } = new List<SanPhamView>();
     }
 }

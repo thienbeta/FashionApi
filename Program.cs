@@ -116,6 +116,7 @@ builder.Services.AddScoped<ISanPhamServices, SanPhamServices>();
 builder.Services.AddScoped<INguoiDungServices, NguoiDungServices>();
 builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<IBinhLuanServices, BinhLuanServices>();
+builder.Services.AddScoped<IGiaoDienServices, GiaoDienServices>();
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())

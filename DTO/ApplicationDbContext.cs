@@ -15,6 +15,7 @@ namespace FashionApi.Data
             public DbSet<DanhMuc> DanhMucs { get; set; }
             public DbSet<NguoiDung> NguoiDungs { get; set; }
             public DbSet<BinhLuan> BinhLuans { get; set; }
+            public DbSet<GiaoDien> GiaoDiens { get; set; }
 
             protected override void OnModelCreating(ModelBuilder modelBuilder)
             {
@@ -113,6 +114,13 @@ namespace FashionApi.Data
                         entity.Property(e => e.TrangThai)
                         .HasDefaultValue(1);
 
+                        // Navigation property cho mối quan hệ 1 danh mục - nhiều sản phẩm
+                        entity.HasMany(e => e.SanPhams)
+                        .WithOne(sp => sp.DanhMucLoai)
+                        .HasForeignKey(sp => sp.MaLoai)
+                        .HasConstraintName("FK_SanPham_DanhMuc_Loai")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                         // Index cho tìm kiếm nhanh
                         entity.HasIndex(e => e.TenDanhMuc);
                   });
@@ -157,6 +165,13 @@ namespace FashionApi.Data
                         .WithMany(bl => bl.Medias)
                         .HasForeignKey(e => e.MaBinhLuan)
                         .HasConstraintName("FK_Media_BinhLuan")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                        // Quan hệ với GiaoDien (1 giao diện - nhiều media)
+                        entity.HasOne(e => e.GiaoDienNavigation)
+                        .WithMany(gd => gd.Medias)
+                        .HasForeignKey(e => e.MaGiaoDien)
+                        .HasConstraintName("FK_Media_GiaoDien")
                         .OnDelete(DeleteBehavior.Cascade);
                   });
 
@@ -258,6 +273,51 @@ namespace FashionApi.Data
                         .HasForeignKey(m => m.MaBinhLuan)
                         .HasConstraintName("FK_Media_BinhLuan")
                         .OnDelete(DeleteBehavior.Cascade);
+                  });
+
+                  // GiaoDien
+                  modelBuilder.Entity<GiaoDien>(entity =>
+                  {
+                        entity.HasKey(e => e.MaGiaoDien);
+
+                        entity.Property(e => e.MaGiaoDien)
+                        .ValueGeneratedOnAdd();
+
+                        entity.Property(e => e.TenGiaoDien)
+                        .HasMaxLength(100)
+                        .IsRequired();
+
+                        entity.Property(e => e.LoaiGiaoDien)
+                        .IsRequired();
+
+                        entity.Property(e => e.MoTa)
+                        .HasMaxLength(500);
+
+                        entity.Property(e => e.MetaTitle)
+                        .HasMaxLength(200);
+
+                        entity.Property(e => e.MetaDescription)
+                        .HasMaxLength(500);
+
+                        entity.Property(e => e.MetaKeywords)
+                        .HasMaxLength(500);
+
+                        entity.Property(e => e.NgayTao)
+                        .HasDefaultValueSql("getutcdate()");
+
+                        entity.Property(e => e.TrangThai)
+                        .HasDefaultValue(1);
+
+                        // Quan hệ với Media (1 giao diện - nhiều media)
+                        entity.HasMany(e => e.Medias)
+                        .WithOne(m => m.GiaoDienNavigation)
+                        .HasForeignKey(m => m.MaGiaoDien)
+                        .HasConstraintName("FK_Media_GiaoDien")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                        // Index cho tìm kiếm nhanh
+                        entity.HasIndex(e => e.TenGiaoDien);
+                        entity.HasIndex(e => e.LoaiGiaoDien);
                   });
 
             }
