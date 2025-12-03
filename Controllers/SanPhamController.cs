@@ -298,5 +298,262 @@ namespace FashionApi.Controllers
             }
         }
 
+        /// <summary>
+        /// Lấy sản phẩm mới nhất với phân trang - cho User
+        /// </summary>
+        /// <param name="page">Số trang (bắt đầu từ 1)</param>
+        /// <param name="pageSize">Số sản phẩm mỗi trang (mặc định 12)</param>
+        /// <returns>Danh sách sản phẩm với thông tin phân trang</returns>
+        [HttpGet("newest")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> GetNewestProducts(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 12)
+        {
+            if (page <= 0 || pageSize <= 0 || pageSize > 100)
+            {
+                _logger.LogWarning("Tham số phân trang không hợp lệ: Page={Page}, PageSize={PageSize}", page, pageSize);
+                return BadRequest(new { Message = "Số trang phải lớn hơn 0 và kích thước trang từ 1-100." });
+            }
+
+            try
+            {
+                // Lấy tất cả sản phẩm đang hoạt động
+                var allProducts = await _sanPhamServices.GetAllAsync();
+                var activeProducts = allProducts.Where(sp => sp.TrangThai == 1).ToList();
+
+                // Sắp xếp theo ngày tạo mới nhất
+                var sortedProducts = activeProducts
+                    .OrderByDescending(sp => sp.NgayTao)
+                    .ThenBy(sp => sp.TenSanPham)
+                    .ToList();
+
+                // Tính toán phân trang
+                var totalCount = sortedProducts.Count;
+                var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+                var skip = (page - 1) * pageSize;
+
+                var pagedProducts = sortedProducts
+                    .Skip(skip)
+                    .Take(pageSize)
+                    .ToList();
+
+                var result = new
+                {
+                    Data = pagedProducts,
+                    Pagination = new
+                    {
+                        CurrentPage = page,
+                        PageSize = pageSize,
+                        TotalCount = totalCount,
+                        TotalPages = totalPages,
+                        HasNextPage = page < totalPages,
+                        HasPreviousPage = page > 1
+                    }
+                };
+
+                _logger.LogInformation("Lấy sản phẩm mới nhất với phân trang thành công: Page={Page}, PageSize={PageSize}, TotalCount={TotalCount}",
+                    page, pageSize, totalCount);
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy sản phẩm mới nhất với phân trang: Page={Page}, PageSize={PageSize}, StackTrace: {StackTrace}",
+                    page, pageSize, ex.StackTrace);
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { Message = "Lỗi máy chủ nội bộ", Detail = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Lấy sản phẩm bán chạy với phân trang - cho User
+        /// </summary>
+        /// <param name="page">Số trang (bắt đầu từ 1)</param>
+        /// <param name="pageSize">Số sản phẩm mỗi trang (mặc định 12)</param>
+        /// <returns>Danh sách sản phẩm bán chạy với thông tin phân trang</returns>
+        [HttpGet("hot-sale")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> GetHotSaleProducts(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 12)
+        {
+            if (page <= 0 || pageSize <= 0 || pageSize > 100)
+            {
+                _logger.LogWarning("Tham số phân trang không hợp lệ: Page={Page}, PageSize={PageSize}", page, pageSize);
+                return BadRequest(new { Message = "Số trang phải lớn hơn 0 và kích thước trang từ 1-100." });
+            }
+
+            try
+            {
+                // Lấy top 100 sản phẩm bán chạy nhất
+                var hotProducts = await _sanPhamServices.GetBestSellingAsync(100);
+                var activeHotProducts = hotProducts.Where(sp => sp.TrangThai == 1).ToList();
+
+                // Tính toán phân trang
+                var totalCount = activeHotProducts.Count;
+                var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+                var skip = (page - 1) * pageSize;
+
+                var pagedProducts = activeHotProducts
+                    .Skip(skip)
+                    .Take(pageSize)
+                    .ToList();
+
+                var result = new
+                {
+                    Data = pagedProducts,
+                    Pagination = new
+                    {
+                        CurrentPage = page,
+                        PageSize = pageSize,
+                        TotalCount = totalCount,
+                        TotalPages = totalPages,
+                        HasNextPage = page < totalPages,
+                        HasPreviousPage = page > 1
+                    }
+                };
+
+                _logger.LogInformation("Lấy sản phẩm hot sale với phân trang thành công: Page={Page}, PageSize={PageSize}, TotalCount={TotalCount}",
+                    page, pageSize, totalCount);
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy sản phẩm hot sale với phân trang: Page={Page}, PageSize={PageSize}, StackTrace: {StackTrace}",
+                    page, pageSize, ex.StackTrace);
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { Message = "Lỗi máy chủ nội bộ", Detail = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Tìm kiếm và lọc sản phẩm với phân trang - cho User và Admin
+        /// </summary>
+        /// <param name="page">Số trang (bắt đầu từ 1)</param>
+        /// <param name="pageSize">Số sản phẩm mỗi trang (mặc định 12)</param>
+        /// <param name="keyword">Từ khóa tìm kiếm</param>
+        /// <param name="maLoai">Mã loại sản phẩm</param>
+        /// <param name="maThuongHieu">Mã thương hiệu</param>
+        /// <param name="minPrice">Giá tối thiểu</param>
+        /// <param name="maxPrice">Giá tối đa</param>
+        /// <param name="gioiTinh">Giới tính (0: Tất cả, 1: Nam, 2: Nữ, 3: Khác)</param>
+        /// <param name="sortBy">Sắp xếp theo (newest, price_asc, price_desc, rating)</param>
+        /// <returns>Danh sách sản phẩm đã lọc với thông tin phân trang</returns>
+        [HttpGet("filter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> FilterProducts(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 12,
+            [FromQuery] string? keyword = null,
+            [FromQuery] int? maLoai = null,
+            [FromQuery] int? maThuongHieu = null,
+            [FromQuery] decimal? minPrice = null,
+            [FromQuery] decimal? maxPrice = null,
+            [FromQuery] int? gioiTinh = null,
+            [FromQuery] string? sortBy = "newest")
+        {
+            if (page <= 0 || pageSize <= 0 || pageSize > 100)
+            {
+                _logger.LogWarning("Tham số phân trang không hợp lệ: Page={Page}, PageSize={PageSize}", page, pageSize);
+                return BadRequest(new { Message = "Số trang phải lớn hơn 0 và kích thước trang từ 1-100." });
+            }
+
+            try
+            {
+                // Lấy tất cả sản phẩm
+                var allProducts = await _sanPhamServices.GetAllAsync();
+                var filteredProducts = allProducts.Where(sp => sp.TrangThai == 1).ToList();
+
+                // Lọc theo từ khóa
+                if (!string.IsNullOrEmpty(keyword))
+                {
+                    filteredProducts = filteredProducts
+                        .Where(sp => sp.TenSanPham.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
+                                   (sp.MoTa != null && sp.MoTa.Contains(keyword, StringComparison.OrdinalIgnoreCase)))
+                        .ToList();
+                }
+
+                // Lọc theo loại
+                if (maLoai.HasValue)
+                {
+                    filteredProducts = filteredProducts.Where(sp => sp.MaLoai == maLoai.Value).ToList();
+                }
+
+                // Lọc theo thương hiệu
+                if (maThuongHieu.HasValue)
+                {
+                    filteredProducts = filteredProducts.Where(sp => sp.MaThuongHieu == maThuongHieu.Value).ToList();
+                }
+
+                // Lọc theo giới tính
+                if (gioiTinh.HasValue)
+                {
+                    filteredProducts = filteredProducts.Where(sp => sp.GioiTinh == gioiTinh.Value).ToList();
+                }
+
+                // Sắp xếp
+                filteredProducts = sortBy?.ToLower() switch
+                {
+                    "price_asc" => filteredProducts.OrderBy(sp => sp.DanhGiaTrungBinh).ToList(),
+                    "price_desc" => filteredProducts.OrderByDescending(sp => sp.DanhGiaTrungBinh).ToList(),
+                    "rating" => filteredProducts.OrderByDescending(sp => sp.DanhGiaTrungBinh ?? 0).ThenByDescending(sp => sp.SoLuongDanhGia ?? 0).ToList(),
+                    _ => filteredProducts.OrderByDescending(sp => sp.NgayTao).ToList() // newest
+                };
+
+                // Tính toán phân trang
+                var totalCount = filteredProducts.Count;
+                var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+                var skip = (page - 1) * pageSize;
+
+                var pagedProducts = filteredProducts
+                    .Skip(skip)
+                    .Take(pageSize)
+                    .ToList();
+
+                var result = new
+                {
+                    Data = pagedProducts,
+                    Filters = new
+                    {
+                        Keyword = keyword,
+                        MaLoai = maLoai,
+                        MaThuongHieu = maThuongHieu,
+                        MinPrice = minPrice,
+                        MaxPrice = maxPrice,
+                        GioiTinh = gioiTinh,
+                        SortBy = sortBy
+                    },
+                    Pagination = new
+                    {
+                        CurrentPage = page,
+                        PageSize = pageSize,
+                        TotalCount = totalCount,
+                        TotalPages = totalPages,
+                        HasNextPage = page < totalPages,
+                        HasPreviousPage = page > 1
+                    }
+                };
+
+                _logger.LogInformation("Lọc sản phẩm với phân trang thành công: Page={Page}, PageSize={PageSize}, TotalCount={TotalCount}, Filters={@Filters}",
+                    page, pageSize, totalCount, new { keyword, maLoai, maThuongHieu, gioiTinh, sortBy });
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lọc sản phẩm với phân trang: Page={Page}, PageSize={PageSize}, StackTrace: {StackTrace}",
+                    page, pageSize, ex.StackTrace);
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { Message = "Lỗi máy chủ nội bộ", Detail = ex.Message });
+            }
+        }
     }
 }
