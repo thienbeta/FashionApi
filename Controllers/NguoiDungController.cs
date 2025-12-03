@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace FashionApi.Controllers
 {
+    /// <summary>Controller quản lý người dùng và xác thực với đăng ký, đăng nhập, quên mật khẩu, profile và admin management</summary>
     [Route("api/[controller]")]
     [ApiController]
     public class NguoiDungController : ControllerBase
@@ -19,6 +20,7 @@ namespace FashionApi.Controllers
         private readonly INguoiDungServices _nguoiDungServices;
         private readonly ILogger<NguoiDungController> _logger;
 
+        /// <summary>Khởi tạo controller với dependency injection cho service và logger</summary>
         public NguoiDungController(INguoiDungServices nguoiDungServices, ILogger<NguoiDungController> logger)
         {
             _nguoiDungServices = nguoiDungServices ?? throw new ArgumentNullException(nameof(nguoiDungServices));
@@ -26,10 +28,13 @@ namespace FashionApi.Controllers
         }
 
         /// <summary>
-        /// Tạo mới người dùng
+        /// Tạo mới người dùng (Đăng ký tài khoản)
         /// </summary>
-        /// <param name="model">Thông tin tạo người dùng</param>
-        /// <returns>Kết quả tạo người dùng</returns>
+        /// <param name="model">Thông tin tạo người dùng bao gồm họ tên, email, tài khoản, mật khẩu và avatar</param>
+        /// <returns>Thông tin người dùng vừa tạo</returns>
+        /// <response code="200">Tạo người dùng thành công</response>
+        /// <response code="400">Dữ liệu đầu vào không hợp lệ</response>
+        /// <response code="500">Lỗi máy chủ nội bộ</response>
         [HttpPost]
         public async Task<IActionResult> Create([FromForm] NguoiDungCreate model)
         {
@@ -56,10 +61,16 @@ namespace FashionApi.Controllers
         /// <summary>
         /// Cập nhật thông tin người dùng - user tự cập nhật hoặc admin cập nhật user khác
         /// </summary>
-        /// <param name="id">ID người dùng</param>
-        /// <param name="model">Thông tin cập nhật</param>
-        /// <param name="imageFile">File ảnh đại diện (tùy chọn)</param>
-        /// <returns>Kết quả cập nhật người dùng</returns>
+        /// <param name="id">ID người dùng cần cập nhật</param>
+        /// <param name="model">Thông tin cập nhật người dùng</param>
+        /// <param name="imageFile">File ảnh đại diện mới (tùy chọn)</param>
+        /// <returns>Thông tin người dùng sau khi cập nhật</returns>
+        /// <response code="200">Cập nhật người dùng thành công</response>
+        /// <response code="400">Dữ liệu đầu vào không hợp lệ</response>
+        /// <response code="401">Không có quyền truy cập</response>
+        /// <response code="403">Không có quyền cập nhật thông tin người dùng khác</response>
+        /// <response code="404">Không tìm thấy người dùng</response>
+        /// <response code="500">Lỗi máy chủ nội bộ</response>
         [Authorize]
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, [FromForm] NguoiDungEdit model, IFormFile imageFile = null)
@@ -112,6 +123,11 @@ namespace FashionApi.Controllers
         /// </summary>
         /// <param name="id">ID người dùng cần xóa</param>
         /// <returns>Kết quả xóa người dùng</returns>
+        /// <response code="200">Xóa người dùng thành công</response>
+        /// <response code="401">Không có quyền truy cập</response>
+        /// <response code="403">Chỉ admin mới có quyền xóa</response>
+        /// <response code="404">Không tìm thấy người dùng</response>
+        /// <response code="500">Lỗi máy chủ nội bộ</response>
         [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
@@ -138,8 +154,12 @@ namespace FashionApi.Controllers
         /// <summary>
         /// Lấy thông tin người dùng theo ID - yêu cầu đăng nhập
         /// </summary>
-        /// <param name="id">ID người dùng</param>
-        /// <returns>Thông tin người dùng</returns>
+        /// <param name="id">ID người dùng cần lấy thông tin</param>
+        /// <returns>Thông tin chi tiết người dùng</returns>
+        /// <response code="200">Lấy thông tin người dùng thành công</response>
+        /// <response code="401">Không có quyền truy cập</response>
+        /// <response code="404">Không tìm thấy người dùng</response>
+        /// <response code="500">Lỗi máy chủ nội bộ</response>
         [Authorize]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
@@ -166,7 +186,11 @@ namespace FashionApi.Controllers
         /// <summary>
         /// Lấy danh sách tất cả người dùng - chỉ admin
         /// </summary>
-        /// <returns>Danh sách người dùng</returns>
+        /// <returns>Danh sách tất cả người dùng trong hệ thống</returns>
+        /// <response code="200">Lấy danh sách người dùng thành công</response>
+        /// <response code="401">Không có quyền truy cập</response>
+        /// <response code="403">Chỉ admin mới có quyền xem danh sách</response>
+        /// <response code="500">Lỗi máy chủ nội bộ</response>
         [Authorize(Roles = "Admin")]
         [HttpGet]
         public async Task<IActionResult> GetAll()
@@ -188,8 +212,12 @@ namespace FashionApi.Controllers
         /// <summary>
         /// Tìm kiếm người dùng theo từ khóa - chỉ admin
         /// </summary>
-        /// <param name="keyword">Từ khóa tìm kiếm</param>
-        /// <returns>Danh sách người dùng phù hợp</returns>
+        /// <param name="keyword">Từ khóa tìm kiếm trong họ tên, email, tài khoản</param>
+        /// <returns>Danh sách người dùng phù hợp với từ khóa tìm kiếm</returns>
+        /// <response code="200">Tìm kiếm người dùng thành công</response>
+        /// <response code="401">Không có quyền truy cập</response>
+        /// <response code="403">Chỉ admin mới có quyền tìm kiếm</response>
+        /// <response code="500">Lỗi máy chủ nội bộ</response>
         [Authorize(Roles = "Admin")]
         [HttpGet("search")]
         public async Task<IActionResult> Search([FromQuery] string keyword)
@@ -211,7 +239,11 @@ namespace FashionApi.Controllers
         /// Lọc người dùng theo vai trò - chỉ admin
         /// </summary>
         /// <param name="role">Vai trò cần lọc (1=Admin, 2=User)</param>
-        /// <returns>Danh sách người dùng theo vai trò</returns>
+        /// <returns>Danh sách người dùng theo vai trò cụ thể</returns>
+        /// <response code="200">Lọc người dùng theo vai trò thành công</response>
+        /// <response code="401">Không có quyền truy cập</response>
+        /// <response code="403">Chỉ admin mới có quyền lọc</response>
+        /// <response code="500">Lỗi máy chủ nội bộ</response>
         [Authorize(Roles = "Admin")]
         [HttpGet("filter/role/{role}")]
         public async Task<IActionResult> FilterByRole(int role)
@@ -232,8 +264,12 @@ namespace FashionApi.Controllers
         /// <summary>
         /// Đăng nhập người dùng
         /// </summary>
-        /// <param name="model">Thông tin đăng nhập</param>
-        /// <returns>Token và thông tin người dùng đã đăng nhập</returns>
+        /// <param name="model">Thông tin đăng nhập bao gồm tài khoản và mật khẩu</param>
+        /// <returns>Token JWT và thông tin người dùng đã đăng nhập</returns>
+        /// <response code="200">Đăng nhập thành công</response>
+        /// <response code="400">Dữ liệu đầu vào không hợp lệ</response>
+        /// <response code="401">Thông tin đăng nhập không hợp lệ</response>
+        /// <response code="500">Lỗi máy chủ nội bộ</response>
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] DangNhap model)
         {
@@ -265,8 +301,11 @@ namespace FashionApi.Controllers
         /// <summary>
         /// Gửi OTP để đặt lại mật khẩu
         /// </summary>
-        /// <param name="email">Email người dùng</param>
-        /// <returns>Kết quả gửi OTP</returns>
+        /// <param name="email">Email của người dùng cần reset mật khẩu</param>
+        /// <returns>Kết quả gửi OTP qua email</returns>
+        /// <response code="200">Gửi OTP thành công</response>
+        /// <response code="404">Email không tồn tại trong hệ thống</response>
+        /// <response code="500">Lỗi máy chủ nội bộ</response>
         [HttpPost("forgot-password")]
         public async Task<IActionResult> ForgotPassword([FromBody] string email)
         {
@@ -291,8 +330,12 @@ namespace FashionApi.Controllers
         /// <summary>
         /// Đặt lại mật khẩu với OTP
         /// </summary>
-        /// <param name="model">Thông tin đặt lại mật khẩu</param>
+        /// <param name="model">Thông tin đặt lại mật khẩu bao gồm email, OTP và mật khẩu mới</param>
         /// <returns>Kết quả đặt lại mật khẩu</returns>
+        /// <response code="200">Đặt lại mật khẩu thành công</response>
+        /// <response code="400">Dữ liệu đầu vào không hợp lệ</response>
+        /// <response code="404">Email không tồn tại</response>
+        /// <response code="500">Lỗi máy chủ nội bộ</response>
         [HttpPost("reset-password")]
         public async Task<IActionResult> ResetPassword([FromBody] QuenMatKhau model)
         {

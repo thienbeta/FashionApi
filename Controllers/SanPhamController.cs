@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace FashionApi.Controllers
 {
+    /// <summary>Controller quản lý sản phẩm thời trang với CRUD operations, phân trang, tìm kiếm nâng cao và upload hình ảnh</summary>
     [Route("api/[controller]")]
     [ApiController]
     public class SanPhamController : ControllerBase
@@ -17,12 +18,21 @@ namespace FashionApi.Controllers
         private readonly ISanPhamServices _sanPhamServices;
         private readonly ILogger<SanPhamController> _logger;
 
+        /// <summary>Khởi tạo controller với dependency injection cho service và logger</summary>
         public SanPhamController(ISanPhamServices sanPhamServices, ILogger<SanPhamController> logger)
         {
             _sanPhamServices = sanPhamServices ?? throw new ArgumentNullException(nameof(sanPhamServices));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
+        /// <summary>
+        /// Tạo mới sản phẩm (Admin only)
+        /// </summary>
+        /// <param name="model">Thông tin tạo sản phẩm bao gồm tên, mô tả, loại, thương hiệu và hình ảnh</param>
+        /// <returns>Thông tin sản phẩm vừa tạo</returns>
+        /// <response code="201">Tạo sản phẩm thành công</response>
+        /// <response code="400">Dữ liệu đầu vào không hợp lệ</response>
+        /// <response code="500">Lỗi máy chủ nội bộ</response>
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -55,6 +65,17 @@ namespace FashionApi.Controllers
             }
         }
 
+        /// <summary>
+        /// Cập nhật thông tin sản phẩm (Admin only)
+        /// </summary>
+        /// <param name="id">Mã sản phẩm cần cập nhật</param>
+        /// <param name="model">Thông tin cập nhật sản phẩm</param>
+        /// <param name="newImageFiles">Danh sách hình ảnh mới (tùy chọn)</param>
+        /// <returns>Thông tin sản phẩm sau khi cập nhật</returns>
+        /// <response code="200">Cập nhật sản phẩm thành công</response>
+        /// <response code="400">Dữ liệu đầu vào không hợp lệ</response>
+        /// <response code="404">Không tìm thấy sản phẩm</response>
+        /// <response code="500">Lỗi máy chủ nội bộ</response>
         [HttpPut("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -99,6 +120,14 @@ namespace FashionApi.Controllers
             }
         }
 
+        /// <summary>
+        /// Xóa sản phẩm (Admin only) - Xóa mềm
+        /// </summary>
+        /// <param name="id">Mã sản phẩm cần xóa</param>
+        /// <returns>Kết quả xóa sản phẩm</returns>
+        /// <response code="200">Xóa sản phẩm thành công</response>
+        /// <response code="404">Không tìm thấy sản phẩm</response>
+        /// <response code="500">Lỗi máy chủ nội bộ</response>
         [HttpDelete("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -125,6 +154,14 @@ namespace FashionApi.Controllers
             }
         }
 
+        /// <summary>
+        /// Lấy thông tin sản phẩm theo mã sản phẩm
+        /// </summary>
+        /// <param name="id">Mã sản phẩm</param>
+        /// <returns>Thông tin chi tiết sản phẩm</returns>
+        /// <response code="200">Lấy sản phẩm thành công</response>
+        /// <response code="404">Không tìm thấy sản phẩm</response>
+        /// <response code="500">Lỗi máy chủ nội bộ</response>
         [HttpGet("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -151,6 +188,12 @@ namespace FashionApi.Controllers
             }
         }
 
+        /// <summary>
+        /// Lấy danh sách tất cả sản phẩm (Admin only)
+        /// </summary>
+        /// <returns>Danh sách tất cả sản phẩm</returns>
+        /// <response code="200">Lấy danh sách sản phẩm thành công</response>
+        /// <response code="500">Lỗi máy chủ nội bộ</response>
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
@@ -170,6 +213,16 @@ namespace FashionApi.Controllers
             }
         }
 
+        /// <summary>
+        /// Tìm kiếm sản phẩm theo các tiêu chí (Admin only)
+        /// </summary>
+        /// <param name="trangThai">Trạng thái sản phẩm (0: Không hoạt động, 1: Hoạt động)</param>
+        /// <param name="maSanPham">Mã sản phẩm cụ thể</param>
+        /// <param name="tenSanPham">Tên sản phẩm (tìm kiếm chứa)</param>
+        /// <returns>Danh sách sản phẩm phù hợp với tiêu chí tìm kiếm</returns>
+        /// <response code="200">Tìm kiếm thành công</response>
+        /// <response code="400">Tham số tìm kiếm không hợp lệ</response>
+        /// <response code="500">Lỗi máy chủ nội bộ</response>
         [HttpGet("search")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -200,6 +253,13 @@ namespace FashionApi.Controllers
             }
         }
 
+        /// <summary>
+        /// Lọc sản phẩm theo loại danh mục
+        /// </summary>
+        /// <param name="maLoaiDanhMuc">Mã loại danh mục (1: Loại sản phẩm, 2: Thương hiệu, 3: Hashtag)</param>
+        /// <returns>Danh sách sản phẩm thuộc loại danh mục</returns>
+        /// <response code="200">Lọc sản phẩm thành công</response>
+        /// <response code="500">Lỗi máy chủ nội bộ</response>
         [HttpGet("filter/loai-danh-muc/{maLoaiDanhMuc}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
@@ -221,6 +281,13 @@ namespace FashionApi.Controllers
             }
         }
 
+        /// <summary>
+        /// Lấy sản phẩm theo danh mục cụ thể
+        /// </summary>
+        /// <param name="maDanhMuc">Mã danh mục cụ thể</param>
+        /// <returns>Danh sách sản phẩm thuộc danh mục</returns>
+        /// <response code="200">Lấy sản phẩm theo danh mục thành công</response>
+        /// <response code="500">Lỗi máy chủ nội bộ</response>
         [HttpGet("filter/danh-muc/{maDanhMuc}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
@@ -242,6 +309,14 @@ namespace FashionApi.Controllers
             }
         }
 
+        /// <summary>
+        /// Lấy danh sách sản phẩm bán chạy
+        /// </summary>
+        /// <param name="limit">Số lượng sản phẩm tối đa cần lấy (mặc định 10)</param>
+        /// <returns>Danh sách sản phẩm bán chạy nhất</returns>
+        /// <response code="200">Lấy sản phẩm bán chạy thành công</response>
+        /// <response code="400">Tham số limit không hợp lệ</response>
+        /// <response code="500">Lỗi máy chủ nội bộ</response>
         [HttpGet("best-selling")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -270,6 +345,15 @@ namespace FashionApi.Controllers
             }
         }
 
+        /// <summary>
+        /// Lấy sản phẩm theo loại và thương hiệu kết hợp
+        /// </summary>
+        /// <param name="maLoai">Mã loại sản phẩm</param>
+        /// <param name="maThuongHieu">Mã thương hiệu</param>
+        /// <returns>Danh sách sản phẩm thuộc cả loại và thương hiệu</returns>
+        /// <response code="200">Lấy sản phẩm thành công</response>
+        /// <response code="400">Tham số không hợp lệ</response>
+        /// <response code="500">Lỗi máy chủ nội bộ</response>
         [HttpGet("filter/loai-thuong-hieu")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]

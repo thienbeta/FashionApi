@@ -1,16 +1,19 @@
-﻿using FashionApi.Models.Create;
+﻿using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using FashionApi.Models.Create;
 using FashionApi.Models.Edit;
 using FashionApi.Models.View;
 using FashionApi.Repository;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace FashionApi.Controllers
 {
+    /// <summary>
+    /// Controller quản lý danh mục sản phẩm (Loại, Thương hiệu, Hashtag, Kích thước, Màu sắc)
+    /// </summary>
     [Route("api/[controller]")]
     [ApiController]
     public class DanhMucController : ControllerBase
@@ -18,12 +21,26 @@ namespace FashionApi.Controllers
         private readonly IDanhMucServices _danhMucServices;
         private readonly ILogger<DanhMucController> _logger;
 
+        /// <summary>
+        /// Khởi tạo DanhMucController với dependency injection
+        /// </summary>
+        /// <param name="danhMucServices">Service xử lý logic nghiệp vụ danh mục</param>
+        /// <param name="logger">Logger để ghi nhật ký hoạt động</param>
         public DanhMucController(IDanhMucServices danhMucServices, ILogger<DanhMucController> logger)
         {
             _danhMucServices = danhMucServices ?? throw new ArgumentNullException(nameof(danhMucServices));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
+        /// <summary>
+        /// Tạo mới danh mục (Loại, Thương hiệu, Hashtag, Kích thước, Màu sắc)
+        /// </summary>
+        /// <param name="model">Thông tin tạo danh mục bao gồm tên, loại và hình ảnh</param>
+        /// <param name="imageFile">File hình ảnh đại diện cho danh mục</param>
+        /// <returns>Thông tin danh mục vừa tạo</returns>
+        /// <response code="200">Tạo danh mục thành công</response>
+        /// <response code="400">Dữ liệu đầu vào không hợp lệ</response>
+        /// <response code="500">Lỗi máy chủ nội bộ</response>
         [HttpPost]
         public async Task<IActionResult> Create([FromForm] DanhMucCreate model, IFormFile imageFile)
         {
@@ -46,6 +63,17 @@ namespace FashionApi.Controllers
             }
         }
 
+        /// <summary>
+        /// Cập nhật thông tin danh mục
+        /// </summary>
+        /// <param name="id">ID danh mục cần cập nhật</param>
+        /// <param name="model">Thông tin cập nhật danh mục</param>
+        /// <param name="imageFile">File hình ảnh mới (tùy chọn)</param>
+        /// <returns>Thông tin danh mục sau khi cập nhật</returns>
+        /// <response code="200">Cập nhật danh mục thành công</response>
+        /// <response code="400">Dữ liệu đầu vào không hợp lệ</response>
+        /// <response code="404">Không tìm thấy danh mục</response>
+        /// <response code="500">Lỗi máy chủ nội bộ</response>
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, [FromForm] DanhMucEdit model, IFormFile imageFile = null)
         {
@@ -79,6 +107,14 @@ namespace FashionApi.Controllers
             }
         }
 
+        /// <summary>
+        /// Xóa danh mục - Xóa mềm
+        /// </summary>
+        /// <param name="id">ID danh mục cần xóa</param>
+        /// <returns>Kết quả xóa danh mục</returns>
+        /// <response code="200">Xóa danh mục thành công</response>
+        /// <response code="404">Không tìm thấy danh mục</response>
+        /// <response code="500">Lỗi máy chủ nội bộ</response>
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
@@ -101,6 +137,14 @@ namespace FashionApi.Controllers
             }
         }
 
+        /// <summary>
+        /// Lấy thông tin danh mục theo ID
+        /// </summary>
+        /// <param name="id">ID danh mục</param>
+        /// <returns>Thông tin chi tiết danh mục</returns>
+        /// <response code="200">Lấy danh mục thành công</response>
+        /// <response code="404">Không tìm thấy danh mục</response>
+        /// <response code="500">Lỗi máy chủ nội bộ</response>
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
@@ -123,6 +167,12 @@ namespace FashionApi.Controllers
             }
         }
 
+        /// <summary>
+        /// Lấy danh sách tất cả danh mục
+        /// </summary>
+        /// <returns>Danh sách tất cả danh mục</returns>
+        /// <response code="200">Lấy danh sách danh mục thành công</response>
+        /// <response code="500">Lỗi máy chủ nội bộ</response>
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
@@ -139,6 +189,13 @@ namespace FashionApi.Controllers
             }
         }
 
+        /// <summary>
+        /// Tìm kiếm danh mục theo từ khóa
+        /// </summary>
+        /// <param name="keyword">Từ khóa tìm kiếm trong tên danh mục</param>
+        /// <returns>Danh sách danh mục phù hợp với từ khóa</returns>
+        /// <response code="200">Tìm kiếm danh mục thành công</response>
+        /// <response code="500">Lỗi máy chủ nội bộ</response>
         [HttpGet("search")]
         public async Task<IActionResult> Search([FromQuery] string keyword)
         {
@@ -155,6 +212,14 @@ namespace FashionApi.Controllers
             }
         }
 
+        /// <summary>
+        /// Lọc danh mục theo trạng thái
+        /// </summary>
+        /// <param name="status">Trạng thái danh mục (0: Không hoạt động, 1: Hoạt động)</param>
+        /// <returns>Danh sách danh mục theo trạng thái</returns>
+        /// <response code="200">Lọc danh mục theo trạng thái thành công</response>
+        /// <response code="400">Trạng thái không hợp lệ (phải là 0 hoặc 1)</response>
+        /// <response code="500">Lỗi máy chủ nội bộ</response>
         [HttpGet("filter/status/{status}")]
         public async Task<IActionResult> FilterByStatus(int status)
         {
@@ -177,6 +242,14 @@ namespace FashionApi.Controllers
             }
         }
 
+        /// <summary>
+        /// Lọc danh mục theo loại
+        /// </summary>
+        /// <param name="loaiDanhMuc">Loại danh mục (1: Loại sản phẩm, 2: Thương hiệu, 3: Hashtag, 4: Kích thước, 5: Màu sắc)</param>
+        /// <returns>Danh sách danh mục theo loại</returns>
+        /// <response code="200">Lọc danh mục theo loại thành công</response>
+        /// <response code="400">Loại danh mục không hợp lệ (phải từ 1 đến 5)</response>
+        /// <response code="500">Lỗi máy chủ nội bộ</response>
         [HttpGet("filter/type/{loaiDanhMuc}")]
         public async Task<IActionResult> FilterByCategoryType(int loaiDanhMuc)
         {

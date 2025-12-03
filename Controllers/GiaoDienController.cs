@@ -6,6 +6,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace FashionApi.Controllers
 {
+    /// <summary>
+    /// Controller quản lý giao diện website (Logo, Banner, Slider)
+    /// </summary>
     [ApiController]
     [Route("api/[controller]")]
     public class GiaoDienController : ControllerBase
@@ -13,13 +16,23 @@ namespace FashionApi.Controllers
         private readonly IGiaoDienServices _giaoDienServices;
         private readonly ILogger<GiaoDienController> _logger;
 
+        /// <summary>
+        /// Khởi tạo GiaoDienController với dependency injection
+        /// </summary>
+        /// <param name="giaoDienServices">Service xử lý logic nghiệp vụ giao diện</param>
+        /// <param name="logger">Logger để ghi nhật ký hoạt động</param>
         public GiaoDienController(IGiaoDienServices giaoDienServices, ILogger<GiaoDienController> logger)
         {
             _giaoDienServices = giaoDienServices;
             _logger = logger;
         }
 
-        // GET: api/GiaoDien
+        /// <summary>
+        /// Lấy danh sách tất cả giao diện
+        /// </summary>
+        /// <returns>Danh sách tất cả giao diện bao gồm logo, banner, slider</returns>
+        /// <response code="200">Lấy danh sách giao diện thành công</response>
+        /// <response code="500">Lỗi hệ thống khi lấy danh sách giao diện</response>
         [HttpGet]
         public async Task<ActionResult<IEnumerable<GiaoDienView>>> GetAll()
         {
@@ -35,7 +48,14 @@ namespace FashionApi.Controllers
             }
         }
 
-        // GET: api/GiaoDien/{id}
+        /// <summary>
+        /// Lấy thông tin giao diện theo ID
+        /// </summary>
+        /// <param name="id">ID giao diện cần lấy</param>
+        /// <returns>Thông tin chi tiết giao diện</returns>
+        /// <response code="200">Lấy thông tin giao diện thành công</response>
+        /// <response code="404">Không tìm thấy giao diện với ID tương ứng</response>
+        /// <response code="500">Lỗi hệ thống khi lấy thông tin giao diện</response>
         [HttpGet("{id}")]
         public async Task<ActionResult<GiaoDienView>> GetById(int id)
         {
@@ -55,7 +75,13 @@ namespace FashionApi.Controllers
             }
         }
 
-        // GET: api/GiaoDien/type/{loaiGiaoDien}
+        /// <summary>
+        /// Lấy giao diện theo loại
+        /// </summary>
+        /// <param name="loaiGiaoDien">Loại giao diện (1: Logo, 2: Banner, 3: Slider)</param>
+        /// <returns>Danh sách giao diện theo loại cụ thể</returns>
+        /// <response code="200">Lấy giao diện theo loại thành công</response>
+        /// <response code="500">Lỗi hệ thống khi lấy giao diện theo loại</response>
         [HttpGet("type/{loaiGiaoDien}")]
         public async Task<ActionResult<IEnumerable<GiaoDienView>>> GetByType(int loaiGiaoDien)
         {
@@ -71,7 +97,12 @@ namespace FashionApi.Controllers
             }
         }
 
-        // GET: api/GiaoDien/active
+        /// <summary>
+        /// Lấy danh sách giao diện đang hoạt động
+        /// </summary>
+        /// <returns>Danh sách giao diện có trạng thái active (1)</returns>
+        /// <response code="200">Lấy giao diện đang hoạt động thành công</response>
+        /// <response code="500">Lỗi hệ thống khi lấy giao diện đang hoạt động</response>
         [HttpGet("active")]
         public async Task<ActionResult<IEnumerable<GiaoDienView>>> GetActive()
         {
@@ -87,7 +118,14 @@ namespace FashionApi.Controllers
             }
         }
 
-        // GET: api/GiaoDien/search/{keyword}
+        /// <summary>
+        /// Tìm kiếm giao diện theo từ khóa
+        /// </summary>
+        /// <param name="keyword">Từ khóa tìm kiếm trong tên, mô tả hoặc meta title</param>
+        /// <returns>Danh sách giao diện phù hợp với từ khóa tìm kiếm</returns>
+        /// <response code="200">Tìm kiếm giao diện thành công</response>
+        /// <response code="400">Từ khóa tìm kiếm không được để trống</response>
+        /// <response code="500">Lỗi hệ thống khi tìm kiếm giao diện</response>
         [HttpGet("search/{keyword}")]
         public async Task<ActionResult<IEnumerable<GiaoDienView>>> Search([FromRoute] string keyword)
         {
@@ -108,7 +146,13 @@ namespace FashionApi.Controllers
             }
         }
 
-        // GET: api/GiaoDien/status/{trangThai}
+        /// <summary>
+        /// Lọc giao diện theo trạng thái
+        /// </summary>
+        /// <param name="trangThai">Trạng thái giao diện (0: Không hoạt động, 1: Hoạt động)</param>
+        /// <returns>Danh sách giao diện theo trạng thái</returns>
+        /// <response code="200">Lọc giao diện theo trạng thái thành công</response>
+        /// <response code="500">Lỗi hệ thống khi lọc giao diện theo trạng thái</response>
         [HttpGet("status/{trangThai}")]
         public async Task<ActionResult<IEnumerable<GiaoDienView>>> FilterByStatus([FromRoute] int trangThai)
         {
@@ -124,7 +168,14 @@ namespace FashionApi.Controllers
             }
         }
 
-        // POST: api/GiaoDien
+        /// <summary>
+        /// Tạo giao diện mới
+        /// </summary>
+        /// <param name="giaoDienCreate">Thông tin tạo giao diện bao gồm tên, loại, mô tả và SEO</param>
+        /// <returns>Thông tin giao diện vừa tạo</returns>
+        /// <response code="201">Tạo giao diện thành công</response>
+        /// <response code="400">Dữ liệu đầu vào không hợp lệ</response>
+        /// <response code="500">Lỗi hệ thống khi tạo giao diện mới</response>
         [HttpPost]
         public async Task<ActionResult<GiaoDienView>> Create([FromBody] Models.Create.GiaoDienCreate giaoDienCreate)
         {
@@ -150,7 +201,16 @@ namespace FashionApi.Controllers
             }
         }
 
-        // PUT: api/GiaoDien/{id}
+        /// <summary>
+        /// Cập nhật thông tin giao diện
+        /// </summary>
+        /// <param name="id">ID giao diện cần cập nhật</param>
+        /// <param name="giaoDienEdit">Thông tin cập nhật giao diện</param>
+        /// <returns>Thông tin giao diện sau khi cập nhật</returns>
+        /// <response code="200">Cập nhật giao diện thành công</response>
+        /// <response code="400">Dữ liệu đầu vào không hợp lệ</response>
+        /// <response code="404">Không tìm thấy giao diện với ID tương ứng</response>
+        /// <response code="500">Lỗi hệ thống khi cập nhật giao diện</response>
         [HttpPut("{id}")]
         public async Task<ActionResult<GiaoDienView>> Update(int id, [FromBody] Models.Edit.GiaoDienEdit giaoDienEdit)
         {
@@ -176,7 +236,14 @@ namespace FashionApi.Controllers
             }
         }
 
-        // DELETE: api/GiaoDien/{id}
+        /// <summary>
+        /// Xóa giao diện
+        /// </summary>
+        /// <param name="id">ID giao diện cần xóa</param>
+        /// <returns>Kết quả xóa giao diện</returns>
+        /// <response code="200">Xóa giao diện thành công</response>
+        /// <response code="404">Không tìm thấy giao diện với ID tương ứng</response>
+        /// <response code="500">Lỗi hệ thống khi xóa giao diện</response>
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
@@ -197,7 +264,16 @@ namespace FashionApi.Controllers
             }
         }
 
-        // POST: api/GiaoDien/{id}/media
+        /// <summary>
+        /// Thêm media vào giao diện
+        /// </summary>
+        /// <param name="id">ID giao diện cần thêm media</param>
+        /// <param name="mediaCreate">Thông tin media cần thêm</param>
+        /// <returns>Kết quả thêm media</returns>
+        /// <response code="200">Thêm media thành công</response>
+        /// <response code="400">Dữ liệu đầu vào không hợp lệ</response>
+        /// <response code="404">Không tìm thấy giao diện với ID tương ứng</response>
+        /// <response code="500">Lỗi hệ thống khi thêm media</response>
         [HttpPost("{id}/media")]
         public async Task<IActionResult> AddMedia(int id, [FromBody] Models.Create.MediaCreate mediaCreate)
         {
@@ -223,7 +299,15 @@ namespace FashionApi.Controllers
             }
         }
 
-        // DELETE: api/GiaoDien/{id}/media/{mediaId}
+        /// <summary>
+        /// Xóa media khỏi giao diện
+        /// </summary>
+        /// <param name="id">ID giao diện</param>
+        /// <param name="mediaId">ID media cần xóa</param>
+        /// <returns>Kết quả xóa media</returns>
+        /// <response code="200">Xóa media thành công</response>
+        /// <response code="404">Không tìm thấy media trong giao diện tương ứng</response>
+        /// <response code="500">Lỗi hệ thống khi xóa media</response>
         [HttpDelete("{id}/media/{mediaId}")]
         public async Task<IActionResult> RemoveMedia(int id, int mediaId)
         {
@@ -244,7 +328,13 @@ namespace FashionApi.Controllers
             }
         }
 
-        // GET: api/GiaoDien/{id}/media
+        /// <summary>
+        /// Lấy danh sách media của giao diện
+        /// </summary>
+        /// <param name="id">ID giao diện</param>
+        /// <returns>Danh sách media của giao diện</returns>
+        /// <response code="200">Lấy danh sách media thành công</response>
+        /// <response code="500">Lỗi hệ thống khi lấy danh sách media</response>
         [HttpGet("{id}/media")]
         public async Task<ActionResult<IEnumerable<MediaView>>> GetMedia(int id)
         {
