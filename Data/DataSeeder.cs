@@ -252,7 +252,7 @@ namespace FashionApi.Data
                 var products = new List<SanPham>();
                 var productNames = new[] { "Áo thun cơ bản", "Quần jean slim", "Váy maxi", "Đồ lót cotton", "Túi xách da", "Giày sneaker", "Nón bucket", "Vòng tay bạc", "Áo khoác len", "Quần short thể thao", "Đầm dạ hội" };
                 var descriptions = new[] { "Áo thun chất liệu cotton thoáng mát", "Quần jean ôm body phong cách trẻ trung", "Váy dài thanh lịch cho các dịp đặc biệt", "Đồ lót cotton mềm mại, an toàn cho da", "Túi xách da thật cao cấp", "Giày sneaker êm ái cho mọi hoạt động", "Nón bucket thời trang", "Vòng tay bạc 925 tinh xảo", "Áo khoác len ấm áp mùa đông", "Quần short thể thao thấm hút mồ hôi", "Đầm dạ hội lấp lánh" };
-                var materials = new[] { "Cotton", "Jean", "Voan", "Cotton", "Da", "Vải canvas", "Cotton", "Bạc", "Len", "Polyester", "Lụa" };
+                var barcodes = new[] { "8936000000001", "8936000000002", "8936000000003", "8936000000004", "8936000000005", "8936000000006", "8936000000007", "8936000000008", "8936000000009", "8936000000010", "8936000000011" };
                 var prices = new[] { 150000m, 450000m, 350000m, 80000m, 1200000m, 800000m, 120000m, 250000m, 550000m, 200000m, 800000m };
                 var salePrices = new[] { 120000m, 400000m, 300000m, 60000m, 1000000m, 700000m, 100000m, 200000m, 500000m, 180000m, 700000m };
                 var quantities = new[] { 50, 30, 20, 100, 15, 25, 40, 10, 35, 60, 12 };
@@ -265,7 +265,7 @@ namespace FashionApi.Data
                         TenSanPham = productNames[i],
                         MoTa = descriptions[i],
                         Slug = productNames[i].ToLower().Replace(" ", "-"),
-                        ChatLieu = materials[i],
+                        MaVach = barcodes[i],
                         NgayTao = DateTime.UtcNow,
                         TrangThai = 1,
                         GioiTinh = genders[i],

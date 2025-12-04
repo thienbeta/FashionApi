@@ -21,7 +21,7 @@ namespace FashionApi.DTO
         [RegularExpression(@"^[a-z0-9]+(?:-[a-z0-9]+)*$", ErrorMessage = "Slug chỉ chứa chữ thường, số và dấu gạch nối")]
         public string Slug { get; set; } = null!;
 
-        [StringLength(100, ErrorMessage = "Chất liệu không được vượt quá 100 ký tự")]
+        [StringLength(100, ErrorMessage = "Mã vạch không được vượt quá 100 ký tự")]
         public string MaVach { get; set; } = null!;
 
         public DateTime NgayTao { get; set; } = DateTime.UtcNow;
