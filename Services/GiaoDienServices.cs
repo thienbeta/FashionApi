@@ -21,7 +21,7 @@ namespace FashionApi.Services
             return await _cache.GetOrCreateAsync("GiaoDien_GetAll", async () =>
             {
                 var giaoDiens = await _context.GiaoDiens
-                    .Include(gd => gd.Medias)
+                    .Include(gd => gd.Media)
                     .OrderBy(gd => gd.MaGiaoDien)
                     .ToListAsync();
 
@@ -36,16 +36,19 @@ namespace FashionApi.Services
                     MetaKeywords = gd.MetaKeywords,
                     NgayTao = gd.NgayTao,
                     TrangThai = gd.TrangThai,
-                    Medias = gd.Medias.Select(m => new MediaView
+                    Medias = gd.Media != null ? new List<MediaView>
                     {
-                        MaMedia = m.MaMedia,
-                        LoaiMedia = m.LoaiMedia,
-                        DuongDan = m.DuongDan,
-                        AltMedia = m.AltMedia,
-                        LinkMedia = m.LinkMedia,
-                        NgayTao = m.NgayTao,
-                        TrangThai = m.TrangThai
-                    }).ToList()
+                        new MediaView
+                        {
+                            MaMedia = gd.Media.MaMedia,
+                            LoaiMedia = gd.Media.LoaiMedia,
+                            DuongDan = gd.Media.DuongDan,
+                            AltMedia = gd.Media.AltMedia,
+                            LinkMedia = gd.Media.LinkMedia,
+                            NgayTao = gd.Media.NgayTao,
+                            TrangThai = gd.Media.TrangThai
+                        }
+                    } : new List<MediaView>()
                 }).ToList();
             }, TimeSpan.FromMinutes(30));
         }
@@ -56,7 +59,7 @@ namespace FashionApi.Services
             return await _cache.GetOrCreateAsync(cacheKey, async () =>
             {
                 var giaoDien = await _context.GiaoDiens
-                    .Include(gd => gd.Medias)
+                    .Include(gd => gd.Media)
                     .FirstOrDefaultAsync(gd => gd.MaGiaoDien == id);
 
                 if (giaoDien == null) return null;
@@ -72,16 +75,19 @@ namespace FashionApi.Services
                     MetaKeywords = giaoDien.MetaKeywords,
                     NgayTao = giaoDien.NgayTao,
                     TrangThai = giaoDien.TrangThai,
-                    Medias = giaoDien.Medias.Select(m => new MediaView
+                    Medias = giaoDien.Media != null ? new List<MediaView>
                     {
-                        MaMedia = m.MaMedia,
-                        LoaiMedia = m.LoaiMedia,
-                        DuongDan = m.DuongDan,
-                        AltMedia = m.AltMedia,
-                        LinkMedia = m.LinkMedia,
-                        NgayTao = m.NgayTao,
-                        TrangThai = m.TrangThai
-                    }).ToList()
+                        new MediaView
+                        {
+                            MaMedia = giaoDien.Media.MaMedia,
+                            LoaiMedia = giaoDien.Media.LoaiMedia,
+                            DuongDan = giaoDien.Media.DuongDan,
+                            AltMedia = giaoDien.Media.AltMedia,
+                            LinkMedia = giaoDien.Media.LinkMedia,
+                            NgayTao = giaoDien.Media.NgayTao,
+                            TrangThai = giaoDien.Media.TrangThai
+                        }
+                    } : new List<MediaView>()
                 };
             }, TimeSpan.FromMinutes(30));
         }
@@ -113,6 +119,34 @@ namespace FashionApi.Services
             var giaoDien = await _context.GiaoDiens.FindAsync(id);
             if (giaoDien == null) return null;
 
+            // Business Logic: Logo chỉ được phép active 1 cái
+            if (giaoDienEdit.LoaiGiaoDien == 1 && giaoDienEdit.TrangThai == 1)
+            {
+                // Disable tất cả Logo khác đang active
+                var activeLogos = await _context.GiaoDiens
+                    .Where(gd => gd.LoaiGiaoDien == 1 && gd.TrangThai == 1 && gd.MaGiaoDien != id)
+                    .ToListAsync();
+
+                foreach (var logo in activeLogos)
+                {
+                    logo.TrangThai = 0;
+                }
+            }
+
+            // Business Logic: Nếu đang chuyển từ inactive sang active, kiểm tra Logo
+            if (giaoDien.TrangThai == 0 && giaoDienEdit.TrangThai == 1 && giaoDienEdit.LoaiGiaoDien == 1)
+            {
+                // Disable tất cả Logo khác đang active
+                var activeLogos = await _context.GiaoDiens
+                    .Where(gd => gd.LoaiGiaoDien == 1 && gd.TrangThai == 1 && gd.MaGiaoDien != id)
+                    .ToListAsync();
+
+                foreach (var logo in activeLogos)
+                {
+                    logo.TrangThai = 0;
+                }
+            }
+
             giaoDien.TenGiaoDien = giaoDienEdit.TenGiaoDien;
             giaoDien.LoaiGiaoDien = giaoDienEdit.LoaiGiaoDien;
             giaoDien.MoTa = giaoDienEdit.MoTa;
@@ -134,7 +168,7 @@ namespace FashionApi.Services
         public async Task<bool> DeleteAsync(int id)
         {
             var giaoDien = await _context.GiaoDiens
-                .Include(gd => gd.Medias)
+                .Include(gd => gd.Media)
                 .FirstOrDefaultAsync(gd => gd.MaGiaoDien == id);
 
             if (giaoDien == null) return false;
@@ -153,7 +187,7 @@ namespace FashionApi.Services
         public async Task<IEnumerable<GiaoDienView>> GetByTypeAsync(int loaiGiaoDien)
         {
             return await _context.GiaoDiens
-                .Include(gd => gd.Medias)
+                .Include(gd => gd.Media)
                 .Where(gd => gd.LoaiGiaoDien == loaiGiaoDien && gd.TrangThai == 1)
                 .OrderBy(gd => gd.NgayTao)
                 .Select(gd => new GiaoDienView
@@ -167,16 +201,19 @@ namespace FashionApi.Services
                     MetaKeywords = gd.MetaKeywords,
                     NgayTao = gd.NgayTao,
                     TrangThai = gd.TrangThai,
-                    Medias = gd.Medias.Select(m => new MediaView
+                    Medias = gd.Media != null ? new List<MediaView>
                     {
-                        MaMedia = m.MaMedia,
-                        LoaiMedia = m.LoaiMedia,
-                        DuongDan = m.DuongDan,
-                        AltMedia = m.AltMedia,
-                        LinkMedia = m.LinkMedia,
-                        NgayTao = m.NgayTao,
-                        TrangThai = m.TrangThai
-                    }).ToList()
+                        new MediaView
+                        {
+                            MaMedia = gd.Media.MaMedia,
+                            LoaiMedia = gd.Media.LoaiMedia,
+                            DuongDan = gd.Media.DuongDan,
+                            AltMedia = gd.Media.AltMedia,
+                            LinkMedia = gd.Media.LinkMedia,
+                            NgayTao = gd.Media.NgayTao,
+                            TrangThai = gd.Media.TrangThai
+                        }
+                    } : new List<MediaView>()
                 })
                 .ToListAsync();
         }
@@ -184,7 +221,7 @@ namespace FashionApi.Services
         public async Task<IEnumerable<GiaoDienView>> GetActiveAsync()
         {
             return await _context.GiaoDiens
-                .Include(gd => gd.Medias)
+                .Include(gd => gd.Media)
                 .Where(gd => gd.TrangThai == 1)
                 .OrderBy(gd => gd.LoaiGiaoDien)
                 .Select(gd => new GiaoDienView
@@ -198,16 +235,19 @@ namespace FashionApi.Services
                     MetaKeywords = gd.MetaKeywords,
                     NgayTao = gd.NgayTao,
                     TrangThai = gd.TrangThai,
-                    Medias = gd.Medias.Select(m => new MediaView
+                    Medias = gd.Media != null ? new List<MediaView>
                     {
-                        MaMedia = m.MaMedia,
-                        LoaiMedia = m.LoaiMedia,
-                        DuongDan = m.DuongDan,
-                        AltMedia = m.AltMedia,
-                        LinkMedia = m.LinkMedia,
-                        NgayTao = m.NgayTao,
-                        TrangThai = m.TrangThai
-                    }).ToList()
+                        new MediaView
+                        {
+                            MaMedia = gd.Media.MaMedia,
+                            LoaiMedia = gd.Media.LoaiMedia,
+                            DuongDan = gd.Media.DuongDan,
+                            AltMedia = gd.Media.AltMedia,
+                            LinkMedia = gd.Media.LinkMedia,
+                            NgayTao = gd.Media.NgayTao,
+                            TrangThai = gd.Media.TrangThai
+                        }
+                    } : new List<MediaView>()
                 })
                 .ToListAsync();
         }
@@ -215,7 +255,7 @@ namespace FashionApi.Services
         public async Task<IEnumerable<GiaoDienView>> SearchAsync(string keyword)
         {
             return await _context.GiaoDiens
-                .Include(gd => gd.Medias)
+                .Include(gd => gd.Media)
                 .Where(gd => (gd.TenGiaoDien.Contains(keyword) ||
                              gd.MoTa.Contains(keyword) ||
                              gd.MetaTitle.Contains(keyword)) && gd.TrangThai == 1)
@@ -231,16 +271,19 @@ namespace FashionApi.Services
                     MetaKeywords = gd.MetaKeywords,
                     NgayTao = gd.NgayTao,
                     TrangThai = gd.TrangThai,
-                    Medias = gd.Medias.Select(m => new MediaView
+                    Medias = gd.Media != null ? new List<MediaView>
                     {
-                        MaMedia = m.MaMedia,
-                        LoaiMedia = m.LoaiMedia,
-                        DuongDan = m.DuongDan,
-                        AltMedia = m.AltMedia,
-                        LinkMedia = m.LinkMedia,
-                        NgayTao = m.NgayTao,
-                        TrangThai = m.TrangThai
-                    }).ToList()
+                        new MediaView
+                        {
+                            MaMedia = gd.Media.MaMedia,
+                            LoaiMedia = gd.Media.LoaiMedia,
+                            DuongDan = gd.Media.DuongDan,
+                            AltMedia = gd.Media.AltMedia,
+                            LinkMedia = gd.Media.LinkMedia,
+                            NgayTao = gd.Media.NgayTao,
+                            TrangThai = gd.Media.TrangThai
+                        }
+                    } : new List<MediaView>()
                 })
                 .ToListAsync();
         }
@@ -248,7 +291,7 @@ namespace FashionApi.Services
         public async Task<IEnumerable<GiaoDienView>> FilterByStatusAsync(int trangThai)
         {
             return await _context.GiaoDiens
-                .Include(gd => gd.Medias)
+                .Include(gd => gd.Media)
                 .Where(gd => gd.TrangThai == trangThai)
                 .OrderBy(gd => gd.NgayTao)
                 .Select(gd => new GiaoDienView
@@ -262,16 +305,19 @@ namespace FashionApi.Services
                     MetaKeywords = gd.MetaKeywords,
                     NgayTao = gd.NgayTao,
                     TrangThai = gd.TrangThai,
-                    Medias = gd.Medias.Select(m => new MediaView
+                    Medias = gd.Media != null ? new List<MediaView>
                     {
-                        MaMedia = m.MaMedia,
-                        LoaiMedia = m.LoaiMedia,
-                        DuongDan = m.DuongDan,
-                        AltMedia = m.AltMedia,
-                        LinkMedia = m.LinkMedia,
-                        NgayTao = m.NgayTao,
-                        TrangThai = m.TrangThai
-                    }).ToList()
+                        new MediaView
+                        {
+                            MaMedia = gd.Media.MaMedia,
+                            LoaiMedia = gd.Media.LoaiMedia,
+                            DuongDan = gd.Media.DuongDan,
+                            AltMedia = gd.Media.AltMedia,
+                            LinkMedia = gd.Media.LinkMedia,
+                            NgayTao = gd.Media.NgayTao,
+                            TrangThai = gd.Media.TrangThai
+                        }
+                    } : new List<MediaView>()
                 })
                 .ToListAsync();
         }

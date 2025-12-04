@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FashionApi.DTO
 {
@@ -34,7 +35,7 @@ namespace FashionApi.DTO
         [Range(0, 1, ErrorMessage = "Trạng thái phải là 0 hoặc 1")]
         public int TrangThai { get; set; } = 1; // 1: Kích hoạt, 0: Vô hiệu hóa
 
-        // Navigation property - 1 giao diện có nhiều hình ảnh
-        public virtual ICollection<Media> Medias { get; set; } = new List<Media>();
+        // Quan hệ 1-1 với Media
+        public virtual Media? Media { get; set; }
     }
 }
