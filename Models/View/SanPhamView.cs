@@ -6,7 +6,7 @@
         public string TenSanPham { get; set; } = null!;
         public string? MoTa { get; set; }
         public string Slug { get; set; } = null!;
-        public string ChatLieu { get; set; } = null!;
+        public string MaVach { get; set; } = null!;
         public DateTime NgayTao { get; set; }
         public int TrangThai { get; set; } // 1: Kích hoạt, 0: Vô hiệu hóa
         public int GioiTinh { get; set; } // 0: Mặc định, 1: Nam, 2: Nữ, 3: Khác
@@ -33,5 +33,7 @@
         public decimal GiaBan { get; set; }
         public decimal? GiaSale { get; set; }
         public int SoLuong { get; set; }
+        public decimal? PhanTramSale { get; set; } // % giảm giá (ví dụ: 20.00)
+        public decimal GiaSauSale { get; set; } // Giá sau khi giảm
     }
 }

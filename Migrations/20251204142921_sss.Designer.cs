@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FashionApi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251204111249_sss")]
+    [Migration("20251204142921_sss")]
     partial class sss
     {
         /// <inheritdoc />
@@ -299,11 +299,6 @@ namespace FashionApi.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MaSanPham"));
 
-                    b.Property<string>("ChatLieu")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
                     b.Property<decimal>("GiaBan")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("decimal(18,2)")
@@ -326,9 +321,14 @@ namespace FashionApi.Migrations
                     b.Property<int>("MaThuongHieu")
                         .HasColumnType("int");
 
+                    b.Property<string>("MaVach")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<string>("MoTa")
-                        .HasMaxLength(10000)
-                        .HasColumnType("text");
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<DateTime>("NgayTao")
                         .ValueGeneratedOnAdd()

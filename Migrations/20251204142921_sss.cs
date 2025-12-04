@@ -80,9 +80,9 @@ namespace FashionApi.Migrations
                     MaSanPham = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     TenSanPham = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    MoTa = table.Column<string>(type: "text", maxLength: 10000, nullable: true),
+                    MoTa = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     Slug = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    ChatLieu = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    MaVach = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     NgayTao = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getutcdate()"),
                     TrangThai = table.Column<int>(type: "int", nullable: false, defaultValue: 1),
                     GioiTinh = table.Column<int>(type: "int", nullable: false, defaultValue: 0),

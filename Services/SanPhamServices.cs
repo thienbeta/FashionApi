@@ -68,7 +68,7 @@ namespace FashionApi.Services
                     TenSanPham = model.TenSanPham,
                     MoTa = model.MoTa,
                     Slug = finalSlug,
-                    ChatLieu = model.ChatLieu,
+                    MaVach = model.MaVach,
                     GioiTinh = model.GioiTinh,
                     MaLoai = model.MaLoai,
                     MaThuongHieu = model.MaThuongHieu,
@@ -191,8 +191,8 @@ namespace FashionApi.Services
                     sanPham.MoTa = model.MoTa;
                 if (model.Slug != null)
                     sanPham.Slug = model.Slug;
-                if (model.ChatLieu != null)
-                    sanPham.ChatLieu = model.ChatLieu;
+                if (model.MaVach != null)
+                    sanPham.MaVach = model.MaVach;
                 if (model.GioiTinh.HasValue)
                     sanPham.GioiTinh = model.GioiTinh.Value;
                 if (model.MaLoai.HasValue)
@@ -545,7 +545,9 @@ namespace FashionApi.Services
                         .Include(sp => sp.Medias)
                         .Include(sp => sp.BinhLuans)
                         .Where(sp => sp.TrangThai == 1)
-                        .OrderByDescending(sp => sp.NgayTao)
+                        // Order by sale price descending (if GiaSale is null, fallback to GiaBan), then by newest
+                        .OrderByDescending(sp => (sp.GiaSale ?? sp.GiaBan))
+                        .ThenByDescending(sp => sp.NgayTao)
                         .Take(limit)
                         .ToListAsync();
 
@@ -642,7 +644,7 @@ namespace FashionApi.Services
                 TenSanPham = sanPham.TenSanPham,
                 MoTa = sanPham.MoTa,
                 Slug = sanPham.Slug,
-                ChatLieu = sanPham.ChatLieu,
+                MaVach = sanPham.MaVach,
                 NgayTao = sanPham.NgayTao,
                 TrangThai = sanPham.TrangThai,
                 GioiTinh = sanPham.GioiTinh,
@@ -677,7 +679,12 @@ namespace FashionApi.Services
                 ,
                 GiaBan = sanPham.GiaBan,
                 GiaSale = sanPham.GiaSale,
-                SoLuong = sanPham.SoLuong
+                SoLuong = sanPham.SoLuong,
+                // Calculate sale percent and price after sale
+                PhanTramSale = (sanPham.GiaBan > 0 && sanPham.GiaSale.HasValue)
+                    ? Math.Round((sanPham.GiaSale.Value / sanPham.GiaBan) * 100m, 2)
+                    : (decimal?)null,
+                GiaSauSale = Math.Max(0m, sanPham.GiaBan - (sanPham.GiaSale ?? 0m))
             };
         }
     }

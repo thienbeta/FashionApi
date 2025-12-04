@@ -10,6 +10,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="wwwroot\uploads\bienThe\**" />
+    <Content Remove="wwwroot\uploads\bienThe\**" />
+    <EmbeddedResource Remove="wwwroot\uploads\bienThe\**" />
+    <None Remove="wwwroot\uploads\bienThe\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="BCrypt.Net" Version="0.1.0" />
     <PackageReference Include="Google.Apis.Sheets.v4" Version="1.70.0.3819" />
     <PackageReference Include="MailKit" Version="4.11.0" />
@@ -30,7 +37,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="wwwroot\uploads\bienThe\" />
     <Folder Include="wwwroot\uploads\danhmuc\" />
     <Folder Include="wwwroot\uploads\binhluan\" />
     <Folder Include="wwwroot\uploads\nguoidung\" />
