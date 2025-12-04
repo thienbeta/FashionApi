@@ -36,6 +36,17 @@ namespace FashionApi.DTO
         public int MaThuongHieu { get; set; }
         public int? MaHashtag { get; set; }
 
+        [Column(TypeName = "decimal(18,2)")]
+        [Range(0, double.MaxValue, ErrorMessage = "Giá bán phải lớn hơn hoặc bằng 0")]
+        public decimal GiaBan { get; set; } = 0m;
+
+        [Column(TypeName = "decimal(18,2)")]
+        [Range(0, double.MaxValue, ErrorMessage = "Giá sale phải lớn hơn hoặc bằng 0")]
+        public decimal? GiaSale { get; set; }
+
+        [Range(0, int.MaxValue, ErrorMessage = "Số lượng phải lớn hơn hoặc bằng 0")]
+        public int SoLuong { get; set; } = 0;
+
         public virtual DanhMuc DanhMucLoai { get; set; } = null!;
         public virtual DanhMuc DanhMucThuongHieu { get; set; } = null!;
         public virtual DanhMuc? DanhMucHashtag { get; set; }
