@@ -36,7 +36,7 @@ namespace FashionApi.Controllers
         /// <response code="400">Dữ liệu đầu vào không hợp lệ</response>
         /// <response code="500">Lỗi máy chủ nội bộ</response>
         [HttpPost]
-        public async Task<IActionResult> Create([FromForm] NguoiDungCreate model)
+        public async Task<IActionResult> Create([FromBody] NguoiDungCreate model)
         {
             if (!ModelState.IsValid)
             {

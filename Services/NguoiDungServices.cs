@@ -274,7 +274,7 @@ namespace FashionApi.Services
             try
             {
                 var nguoiDung = await _context.NguoiDungs
-                    .FirstOrDefaultAsync(nd => nd.TaiKhoan == taiKhoan);
+                    .FirstOrDefaultAsync(nd => nd.TaiKhoan == taiKhoan || nd.Email == taiKhoan);
 
                 if (nguoiDung == null || !PasswordHasher.VerifyPassword(matKhau, nguoiDung.MatKhau))
                 {
