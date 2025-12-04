@@ -77,6 +77,11 @@ namespace FashionApi.Services
                     TrangThai = 1
                 };
 
+                // Set pricing and stock
+                sanPham.GiaBan = model.GiaBan;
+                sanPham.GiaSale = model.GiaSale;
+                sanPham.SoLuong = model.SoLuong;
+
                 _context.SanPhams.Add(sanPham);
                 await _context.SaveChangesAsync();
 
@@ -198,6 +203,16 @@ namespace FashionApi.Services
                     sanPham.MaHashtag = model.MaHashtag.Value;
                 if (model.TrangThai.HasValue)
                     sanPham.TrangThai = model.TrangThai.Value;
+
+                // Update price and stock if provided
+                if (model.GiaBan.HasValue)
+                    sanPham.GiaBan = model.GiaBan.Value;
+
+                if (model.GiaSale.HasValue)
+                    sanPham.GiaSale = model.GiaSale.Value;
+
+                if (model.SoLuong.HasValue)
+                    sanPham.SoLuong = model.SoLuong.Value;
 
                 // Handle new images
                 if (newImageFiles != null && newImageFiles.Any())
@@ -659,6 +674,10 @@ namespace FashionApi.Services
                         .Average(bl => (double)bl.DanhGia.Value)
                     )
                 : null
+                ,
+                GiaBan = sanPham.GiaBan,
+                GiaSale = sanPham.GiaSale,
+                SoLuong = sanPham.SoLuong
             };
         }
     }

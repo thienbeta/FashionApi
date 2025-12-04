@@ -21,6 +21,16 @@ namespace FashionApi.Models.Create
         public int MaThuongHieu { get; set; }
         public int? MaHashtag { get; set; }
 
+        [Required]
+        [Range(0, double.MaxValue, ErrorMessage = "Giá bán phải lớn hơn hoặc bằng 0")]
+        public decimal GiaBan { get; set; }
+
+        [Range(0, double.MaxValue, ErrorMessage = "Giá sale phải lớn hơn hoặc bằng 0")]
+        public decimal? GiaSale { get; set; }
+
+        [Range(0, int.MaxValue, ErrorMessage = "Số lượng phải lớn hơn hoặc bằng 0")]
+        public int SoLuong { get; set; } = 0;
+
         public List<IFormFile>? Images { get; set; }  // Danh sách hình ảnh tải lên
 
     }
