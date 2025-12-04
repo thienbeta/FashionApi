@@ -167,10 +167,10 @@ namespace FashionApi.Data
                         .HasConstraintName("FK_Media_BinhLuan")
                         .OnDelete(DeleteBehavior.Cascade);
 
-                        // Quan hệ với GiaoDien (1 giao diện - nhiều media)
+                        // Quan hệ với GiaoDien (1-1: 1 giao diện có 1 media)
                         entity.HasOne(e => e.GiaoDienNavigation)
-                        .WithMany(gd => gd.Medias)
-                        .HasForeignKey(e => e.MaGiaoDien)
+                        .WithOne(gd => gd.Media)
+                        .HasForeignKey<Media>(e => e.MaGiaoDien)
                         .HasConstraintName("FK_Media_GiaoDien")
                         .OnDelete(DeleteBehavior.Cascade);
                   });
@@ -308,10 +308,10 @@ namespace FashionApi.Data
                         entity.Property(e => e.TrangThai)
                         .HasDefaultValue(1);
 
-                        // Quan hệ với Media (1 giao diện - nhiều media)
-                        entity.HasMany(e => e.Medias)
+                        // Quan hệ với Media (1-1: 1 giao diện - 1 media)
+                        entity.HasOne(e => e.Media)
                         .WithOne(m => m.GiaoDienNavigation)
-                        .HasForeignKey(m => m.MaGiaoDien)
+                        .HasForeignKey<Media>(m => m.MaGiaoDien)
                         .HasConstraintName("FK_Media_GiaoDien")
                         .OnDelete(DeleteBehavior.Cascade);
 

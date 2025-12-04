@@ -349,5 +349,91 @@ namespace FashionApi.Controllers
                 return StatusCode(500, new { message = "Lỗi hệ thống khi lấy danh sách media" });
             }
         }
+
+        /// <summary>
+        /// Upload file và tạo media cho giao diện
+        /// </summary>
+        /// <param name="id">ID giao diện</param>
+        /// <param name="file">File ảnh cần upload</param>
+        /// <param name="altText">Alt text cho hình ảnh (tùy chọn)</param>
+        /// <param name="link">Link liên kết cho media (tùy chọn)</param>
+        /// <returns>Thông tin media vừa tạo</returns>
+        /// <response code="201">Upload và tạo media thành công</response>
+        /// <response code="400">Dữ liệu đầu vào không hợp lệ</response>
+        /// <response code="404">Không tìm thấy giao diện với ID tương ứng</response>
+        /// <response code="500">Lỗi hệ thống khi upload media</response>
+        [HttpPost("{id}/upload-media")]
+        public async Task<IActionResult> UploadMedia(int id, IFormFile file, string? altText = null, string? link = null)
+        {
+            try
+            {
+                if (file == null || file.Length == 0)
+                {
+                    return BadRequest(new { message = "File không được để trống" });
+                }
+
+                // Validate file type (only images)
+                var allowedTypes = new[] { "image/jpeg", "image/png", "image/gif", "image/webp", "image/jpg" };
+                if (!allowedTypes.Contains(file.ContentType.ToLower()))
+                {
+                    return BadRequest(new { message = "Chỉ chấp nhận file hình ảnh (JPEG, PNG, GIF, WebP)" });
+                }
+
+                // Validate file size (max 10MB)
+                if (file.Length > 10 * 1024 * 1024)
+                {
+                    return BadRequest(new { message = "Kích thước file không được vượt quá 10MB" });
+                }
+
+                // Check if GiaoDien exists
+                var giaoDien = await _giaoDienServices.GetByIdAsync(id);
+                if (giaoDien == null)
+                {
+                    return NotFound(new { message = $"Không tìm thấy giao diện với ID {id}" });
+                }
+
+                // Determine subfolder based on GiaoDien type
+                string subFolder;
+                switch (giaoDien.LoaiGiaoDien)
+                {
+                    case 1: subFolder = "logo"; break;
+                    case 2: subFolder = "banner"; break;
+                    case 3: subFolder = "slider"; break;
+                    default: subFolder = "giaodien"; break;
+                }
+
+                // Import MediaServices to save the file
+                var mediaServices = HttpContext.RequestServices.GetRequiredService<IMediaServices>();
+                var imagePath = await mediaServices.SaveOptimizedImageAsync(file, subFolder);
+
+                // Create media record
+                var mediaCreate = new Models.Create.MediaCreate
+                {
+                    LoaiMedia = "image",
+                    DuongDan = imagePath,
+                    AltMedia = altText,
+                    LinkMedia = link,
+                    MaGiaoDien = id,
+                    TrangThai = 1
+                };
+
+                var success = await _giaoDienServices.AddMediaAsync(id, mediaCreate);
+                if (!success)
+                {
+                    return StatusCode(500, new { message = "Không thể tạo bản ghi media" });
+                }
+
+                // Get the newly created media
+                var medias = await _giaoDienServices.GetMediaAsync(id);
+                var newMedia = medias.OrderByDescending(m => m.NgayTao).FirstOrDefault();
+
+                return CreatedAtAction(nameof(GetMedia), new { id = id }, newMedia);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error uploading media for GiaoDien {Id}", id);
+                return StatusCode(500, new { message = "Lỗi hệ thống khi upload media" });
+            }
+        }
     }
 }

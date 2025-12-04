@@ -21,6 +21,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
+        options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
         options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
     });
 
@@ -100,7 +101,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowSpecificOrigins", corsBuilder =>
     {
         corsBuilder
-            .WithOrigins("http://localhost:3000", "http://localhost:5173", "https://swagger.io", "https://fashionapp.com") // Thay thêm domains sản xuất
+            .WithOrigins("http://localhost:3000", "http://localhost:5173", "https://swagger.io", "https://fashionapp.com", "http://localhost:8081") // Thay thêm domains sản xuất
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials(); // Quan trọng cho authentication với cookies/credentials
