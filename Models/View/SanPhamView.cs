@@ -29,5 +29,9 @@
 
         public decimal? DanhGiaTrungBinh { get; set; } // Đánh giá trung bình từ tất cả các bình luận
         public int? SoLuongDanhGia { get; set; } // Số lượng đánh giá từ tất cả các bình luận
+
+        public decimal GiaBan { get; set; }
+        public decimal? GiaSale { get; set; }
+        public int SoLuong { get; set; }
     }
 }

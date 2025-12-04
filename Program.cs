@@ -15,8 +15,8 @@ builder.Logging.AddConsole();
 builder.Logging.AddDebug();
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    // options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnectionDocker")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    //options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnectionDocker")));
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -188,6 +188,17 @@ using (var scope = app.Services.CreateScope())
         logger.LogError(ex, "Lỗi khi áp dụng migration: {ErrorMessage}", ex.Message);
         throw;
     }
+}
+
+// Seed initial data (users, etc.)
+try
+{
+    await DataSeeder.SeedAsync(app.Services);
+}
+catch (Exception ex)
+{
+    var logger = app.Services.GetService<ILogger<Program>>();
+    logger?.LogError(ex, "Lỗi khi seed dữ liệu ban đầu: {Message}", ex.Message);
 }
 
 app.Run("http://0.0.0.0:5083");

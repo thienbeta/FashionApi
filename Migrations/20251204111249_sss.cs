@@ -29,6 +29,26 @@ namespace FashionApi.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "GiaoDiens",
+                columns: table => new
+                {
+                    MaGiaoDien = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    TenGiaoDien = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    LoaiGiaoDien = table.Column<int>(type: "int", nullable: false),
+                    MoTa = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    MetaTitle = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    MetaDescription = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    MetaKeywords = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    NgayTao = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getutcdate()"),
+                    TrangThai = table.Column<int>(type: "int", nullable: false, defaultValue: 1)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_GiaoDiens", x => x.MaGiaoDien);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "NguoiDungs",
                 columns: table => new
                 {
@@ -68,7 +88,10 @@ namespace FashionApi.Migrations
                     GioiTinh = table.Column<int>(type: "int", nullable: false, defaultValue: 0),
                     MaLoai = table.Column<int>(type: "int", nullable: false),
                     MaThuongHieu = table.Column<int>(type: "int", nullable: false),
-                    MaHashtag = table.Column<int>(type: "int", nullable: true)
+                    MaHashtag = table.Column<int>(type: "int", nullable: true),
+                    GiaBan = table.Column<decimal>(type: "decimal(18,2)", nullable: false, defaultValue: 0m),
+                    GiaSale = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    SoLuong = table.Column<int>(type: "int", nullable: false, defaultValue: 0)
                 },
                 constraints: table =>
                 {
@@ -91,48 +114,6 @@ namespace FashionApi.Migrations
                         principalTable: "DanhMucs",
                         principalColumn: "MaDanhMuc",
                         onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "BienThes",
-                columns: table => new
-                {
-                    MaBienThe = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    HinhAnh = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    GiaBan = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    GiaNhap = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    SoLuongNhap = table.Column<int>(type: "int", nullable: false),
-                    SoLuongBan = table.Column<int>(type: "int", nullable: false),
-                    KhuyenMai = table.Column<decimal>(type: "decimal(5,2)", nullable: false, defaultValue: 0m),
-                    MaVach = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    NgayTao = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getutcdate()"),
-                    TrangThai = table.Column<int>(type: "int", nullable: false, defaultValue: 1),
-                    MaSanPham = table.Column<int>(type: "int", nullable: true),
-                    MaKichThuoc = table.Column<int>(type: "int", nullable: false),
-                    MaMau = table.Column<int>(type: "int", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_BienThes", x => x.MaBienThe);
-                    table.ForeignKey(
-                        name: "FK_BienThe_DanhMuc_KichThuoc",
-                        column: x => x.MaKichThuoc,
-                        principalTable: "DanhMucs",
-                        principalColumn: "MaDanhMuc",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_BienThe_DanhMuc_Mau",
-                        column: x => x.MaMau,
-                        principalTable: "DanhMucs",
-                        principalColumn: "MaDanhMuc",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_BienThes_SanPhams_MaSanPham",
-                        column: x => x.MaSanPham,
-                        principalTable: "SanPhams",
-                        principalColumn: "MaSanPham",
-                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -179,7 +160,8 @@ namespace FashionApi.Migrations
                     NgayTao = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getutcdate()"),
                     TrangThai = table.Column<int>(type: "int", nullable: false, defaultValue: 1),
                     MaSanPham = table.Column<int>(type: "int", nullable: true),
-                    MaBinhLuan = table.Column<int>(type: "int", nullable: true)
+                    MaBinhLuan = table.Column<int>(type: "int", nullable: true),
+                    MaGiaoDien = table.Column<int>(type: "int", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -191,27 +173,18 @@ namespace FashionApi.Migrations
                         principalColumn: "MaBinhLuan",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
+                        name: "FK_Media_GiaoDien",
+                        column: x => x.MaGiaoDien,
+                        principalTable: "GiaoDiens",
+                        principalColumn: "MaGiaoDien",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
                         name: "FK_Media_SanPham",
                         column: x => x.MaSanPham,
                         principalTable: "SanPhams",
                         principalColumn: "MaSanPham",
                         onDelete: ReferentialAction.Restrict);
                 });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_BienThes_MaKichThuoc",
-                table: "BienThes",
-                column: "MaKichThuoc");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_BienThes_MaMau",
-                table: "BienThes",
-                column: "MaMau");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_BienThes_MaSanPham",
-                table: "BienThes",
-                column: "MaSanPham");
 
             migrationBuilder.CreateIndex(
                 name: "IX_BinhLuans_MaNguoiDung",
@@ -229,9 +202,26 @@ namespace FashionApi.Migrations
                 column: "TenDanhMuc");
 
             migrationBuilder.CreateIndex(
+                name: "IX_GiaoDiens_LoaiGiaoDien",
+                table: "GiaoDiens",
+                column: "LoaiGiaoDien");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_GiaoDiens_TenGiaoDien",
+                table: "GiaoDiens",
+                column: "TenGiaoDien");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Medias_MaBinhLuan",
                 table: "Medias",
                 column: "MaBinhLuan");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Medias_MaGiaoDien",
+                table: "Medias",
+                column: "MaGiaoDien",
+                unique: true,
+                filter: "[MaGiaoDien] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Medias_MaSanPham",
@@ -281,13 +271,13 @@ namespace FashionApi.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "BienThes");
-
-            migrationBuilder.DropTable(
                 name: "Medias");
 
             migrationBuilder.DropTable(
                 name: "BinhLuans");
+
+            migrationBuilder.DropTable(
+                name: "GiaoDiens");
 
             migrationBuilder.DropTable(
                 name: "NguoiDungs");

@@ -39,7 +39,7 @@ namespace FashionApi.DTO
         [ForeignKey("MaBinhLuan")]
         public virtual BinhLuan? BinhLuanNavigation { get; set; }
 
-        public int MaGiaoDien { get; set; }
+        public int? MaGiaoDien { get; set; }
         [ForeignKey("MaGiaoDien")]
         public virtual GiaoDien GiaoDienNavigation { get; set; } = null!;
     }

@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FashionApi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251204054507_UpdateGiaoDienMediaToOneToOne")]
-    partial class UpdateGiaoDienMediaToOneToOne
+    [Migration("20251204111249_sss")]
+    partial class sss
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -185,7 +185,7 @@ namespace FashionApi.Migrations
                     b.Property<int?>("MaBinhLuan")
                         .HasColumnType("int");
 
-                    b.Property<int>("MaGiaoDien")
+                    b.Property<int?>("MaGiaoDien")
                         .HasColumnType("int");
 
                     b.Property<int?>("MaSanPham")
@@ -206,7 +206,8 @@ namespace FashionApi.Migrations
                     b.HasIndex("MaBinhLuan");
 
                     b.HasIndex("MaGiaoDien")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("[MaGiaoDien] IS NOT NULL");
 
                     b.HasIndex("MaSanPham");
 
@@ -303,6 +304,14 @@ namespace FashionApi.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<decimal>("GiaBan")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<decimal?>("GiaSale")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<int>("GioiTinh")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
@@ -330,6 +339,11 @@ namespace FashionApi.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("SoLuong")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
 
                     b.Property<string>("TenSanPham")
                         .IsRequired()
@@ -389,7 +403,6 @@ namespace FashionApi.Migrations
                         .WithOne("Media")
                         .HasForeignKey("FashionApi.DTO.Media", "MaGiaoDien")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
                         .HasConstraintName("FK_Media_GiaoDien");
 
                     b.HasOne("FashionApi.DTO.SanPham", "SanPhamNavigation")

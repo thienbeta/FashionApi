@@ -53,6 +53,20 @@ namespace FashionApi.Data
                         entity.Property(e => e.TrangThai)
                         .HasDefaultValue(1);
 
+                        // Giá và số lượng
+                        entity.Property(e => e.GiaBan)
+                        .HasColumnType("decimal(18,2)")
+                        .IsRequired()
+                        .HasDefaultValue(0m);
+
+                        entity.Property(e => e.GiaSale)
+                        .HasColumnType("decimal(18,2)")
+                        .IsRequired(false);
+
+                        entity.Property(e => e.SoLuong)
+                        .IsRequired()
+                        .HasDefaultValue(0);
+
                         entity.Property(e => e.MaLoai)
                         .IsRequired();
 
