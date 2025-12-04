@@ -4,6 +4,7 @@ using FashionApi.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FashionApi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251202170206_RemoveBienThe")]
+    partial class RemoveBienThe
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -102,57 +105,6 @@ namespace FashionApi.Migrations
                     b.ToTable("DanhMucs");
                 });
 
-            modelBuilder.Entity("FashionApi.DTO.GiaoDien", b =>
-                {
-                    b.Property<int>("MaGiaoDien")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MaGiaoDien"));
-
-                    b.Property<int>("LoaiGiaoDien")
-                        .HasColumnType("int");
-
-                    b.Property<string>("MetaDescription")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("MetaKeywords")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("MetaTitle")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("MoTa")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<DateTime>("NgayTao")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getutcdate()");
-
-                    b.Property<string>("TenGiaoDien")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<int>("TrangThai")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(1);
-
-                    b.HasKey("MaGiaoDien");
-
-                    b.HasIndex("LoaiGiaoDien");
-
-                    b.HasIndex("TenGiaoDien");
-
-                    b.ToTable("GiaoDiens");
-                });
-
             modelBuilder.Entity("FashionApi.DTO.Media", b =>
                 {
                     b.Property<int>("MaMedia")
@@ -182,9 +134,6 @@ namespace FashionApi.Migrations
                     b.Property<int?>("MaBinhLuan")
                         .HasColumnType("int");
 
-                    b.Property<int?>("MaGiaoDien")
-                        .HasColumnType("int");
-
                     b.Property<int?>("MaSanPham")
                         .HasColumnType("int");
 
@@ -201,8 +150,6 @@ namespace FashionApi.Migrations
                     b.HasKey("MaMedia");
 
                     b.HasIndex("MaBinhLuan");
-
-                    b.HasIndex("MaGiaoDien");
 
                     b.HasIndex("MaSanPham");
 
@@ -381,12 +328,6 @@ namespace FashionApi.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .HasConstraintName("FK_Media_BinhLuan");
 
-                    b.HasOne("FashionApi.DTO.GiaoDien", "GiaoDienNavigation")
-                        .WithMany("Medias")
-                        .HasForeignKey("MaGiaoDien")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .HasConstraintName("FK_Media_GiaoDien");
-
                     b.HasOne("FashionApi.DTO.SanPham", "SanPhamNavigation")
                         .WithMany("Medias")
                         .HasForeignKey("MaSanPham")
@@ -394,8 +335,6 @@ namespace FashionApi.Migrations
                         .HasConstraintName("FK_Media_SanPham");
 
                     b.Navigation("BinhLuanNavigation");
-
-                    b.Navigation("GiaoDienNavigation");
 
                     b.Navigation("SanPhamNavigation");
                 });
@@ -409,7 +348,7 @@ namespace FashionApi.Migrations
                         .HasConstraintName("FK_SanPham_DanhMuc_Hashtag");
 
                     b.HasOne("FashionApi.DTO.DanhMuc", "DanhMucLoai")
-                        .WithMany("SanPhams")
+                        .WithMany()
                         .HasForeignKey("MaLoai")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
@@ -430,16 +369,6 @@ namespace FashionApi.Migrations
                 });
 
             modelBuilder.Entity("FashionApi.DTO.BinhLuan", b =>
-                {
-                    b.Navigation("Medias");
-                });
-
-            modelBuilder.Entity("FashionApi.DTO.DanhMuc", b =>
-                {
-                    b.Navigation("SanPhams");
-                });
-
-            modelBuilder.Entity("FashionApi.DTO.GiaoDien", b =>
                 {
                     b.Navigation("Medias");
                 });

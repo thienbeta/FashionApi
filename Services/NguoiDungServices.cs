@@ -1,4 +1,12 @@
-﻿using FashionApi.Data;
+﻿using System;
+using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
+using System.Threading.Tasks;
+using FashionApi.Data;
 using FashionApi.DTO;
 using FashionApi.Models.Create;
 using FashionApi.Models.Edit;
@@ -6,13 +14,9 @@ using FashionApi.Models.View;
 using FashionApi.Repository;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
+using Microsoft.IdentityModel.Tokens;
 
 namespace FashionApi.Services
 {
@@ -22,6 +26,7 @@ namespace FashionApi.Services
         private readonly IMediaServices _mediaServices;
         private readonly IMemoryCacheServices _cacheServices;
         private readonly EmailService _emailService;
+        private readonly IConfiguration _config;
         private readonly ILogger<NguoiDungServices> _logger;
 
         public NguoiDungServices(
@@ -29,12 +34,14 @@ namespace FashionApi.Services
             IMediaServices mediaServices,
             IMemoryCacheServices cacheServices,
             EmailService emailService,
+            IConfiguration config,
             ILogger<NguoiDungServices> logger)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
             _mediaServices = mediaServices ?? throw new ArgumentNullException(nameof(mediaServices));
             _cacheServices = cacheServices ?? throw new ArgumentNullException(nameof(cacheServices));
             _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
+            _config = config ?? throw new ArgumentNullException(nameof(config));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -259,8 +266,8 @@ namespace FashionApi.Services
             }
         }
 
-        // Đăng nhập người dùng với xác thực mã hóa
-        public async Task<NguoiDungView> LoginAsync(string taiKhoan, string matKhau)
+        // Đăng nhập người dùng và tạo JWT token
+        public async Task<LoginResponse> LoginAsync(string taiKhoan, string matKhau)
         {
             _logger.LogInformation("Đăng nhập người dùng: {TaiKhoan}", taiKhoan);
 
@@ -276,12 +283,17 @@ namespace FashionApi.Services
                 }
 
                 var userView = MapToView(nguoiDung);
+                var token = GenerateJwtToken(userView);
 
                 // Lưu user view vào cache tạm thời sau đăng nhập thành công
                 await _cacheServices.GetOrCreateAsync($"User_{taiKhoan}", async () => userView, TimeSpan.FromMinutes(30));
-                _logger.LogInformation("Đăng nhập thành công và lưu vào cache: {TaiKhoan}", taiKhoan);
+                _logger.LogInformation("Đăng nhập thành công và tạo JWT token: {TaiKhoan}", taiKhoan);
 
-                return userView;
+                return new LoginResponse
+                {
+                    Token = token,
+                    User = userView
+                };
             }
             catch (Exception ex)
             {
@@ -290,7 +302,46 @@ namespace FashionApi.Services
             }
         }
 
-// Gửi OTP cho quên mật khẩu
+        // Tạo JWT token
+        private string GenerateJwtToken(NguoiDungView user)
+        {
+            var claims = new List<Claim>
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, user.MaNguoiDung.ToString()),
+                new Claim(JwtRegisteredClaimNames.UniqueName, user.TaiKhoan),
+                new Claim(JwtRegisteredClaimNames.Email, user.Email),
+                new Claim(ClaimTypes.Name, user.TaiKhoan),
+                new Claim(ClaimTypes.Role, GetRoleName(user.VaiTro))
+            };
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var expiryMinutes = int.Parse(_config["Jwt:ExpiryInMinutes"] ?? "1440"); // 24 hours default
+
+            var token = new JwtSecurityToken(
+                issuer: _config["Jwt:Issuer"],
+                audience: _config["Jwt:Audience"],
+                claims: claims,
+                expires: DateTime.Now.AddMinutes(expiryMinutes),
+                signingCredentials: creds
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        // Chuyển đổi VaiTro từ int thành string
+        private string GetRoleName(int vaiTro)
+        {
+            return vaiTro switch
+            {
+                1 => "Admin",
+                2 => "User",
+                _ => "User" // Mặc định là User
+            };
+        }
+
+        // Gửi OTP cho quên mật khẩu
         public async Task SendForgotPasswordOtpAsync(string email)
         {
             _logger.LogInformation("Gửi OTP quên mật khẩu cho email: {Email}", email);

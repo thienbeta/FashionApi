@@ -15,5 +15,7 @@
         public string? TieuSu { get; set; }
         public DateTime? TimeKhoa { get; set; }
         public int GioiTinh { get; set; } // 0 mặc đinh, 1: Nam, 2: Nữ, 3: khác
+
+        public List<BinhLuanView> BinhLuans { get; set; } = new List<BinhLuanView>();
     }
 }

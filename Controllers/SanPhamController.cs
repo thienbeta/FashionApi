@@ -1,15 +1,16 @@
-﻿using FashionApi.Models.Create;
+﻿using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using FashionApi.Models.Create;
 using FashionApi.Models.Edit;
 using FashionApi.Models.View;
 using FashionApi.Repository;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace FashionApi.Controllers
 {
+    /// <summary>Controller quản lý sản phẩm thời trang với CRUD operations, phân trang, tìm kiếm nâng cao và upload hình ảnh</summary>
     [Route("api/[controller]")]
     [ApiController]
     public class SanPhamController : ControllerBase
@@ -17,12 +18,21 @@ namespace FashionApi.Controllers
         private readonly ISanPhamServices _sanPhamServices;
         private readonly ILogger<SanPhamController> _logger;
 
+        /// <summary>Khởi tạo controller với dependency injection cho service và logger</summary>
         public SanPhamController(ISanPhamServices sanPhamServices, ILogger<SanPhamController> logger)
         {
             _sanPhamServices = sanPhamServices ?? throw new ArgumentNullException(nameof(sanPhamServices));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
+        /// <summary>
+        /// Tạo mới sản phẩm (Admin only)
+        /// </summary>
+        /// <param name="model">Thông tin tạo sản phẩm bao gồm tên, mô tả, loại, thương hiệu và hình ảnh</param>
+        /// <returns>Thông tin sản phẩm vừa tạo</returns>
+        /// <response code="201">Tạo sản phẩm thành công</response>
+        /// <response code="400">Dữ liệu đầu vào không hợp lệ</response>
+        /// <response code="500">Lỗi máy chủ nội bộ</response>
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -55,6 +65,17 @@ namespace FashionApi.Controllers
             }
         }
 
+        /// <summary>
+        /// Cập nhật thông tin sản phẩm (Admin only)
+        /// </summary>
+        /// <param name="id">Mã sản phẩm cần cập nhật</param>
+        /// <param name="model">Thông tin cập nhật sản phẩm</param>
+        /// <param name="newImageFiles">Danh sách hình ảnh mới (tùy chọn)</param>
+        /// <returns>Thông tin sản phẩm sau khi cập nhật</returns>
+        /// <response code="200">Cập nhật sản phẩm thành công</response>
+        /// <response code="400">Dữ liệu đầu vào không hợp lệ</response>
+        /// <response code="404">Không tìm thấy sản phẩm</response>
+        /// <response code="500">Lỗi máy chủ nội bộ</response>
         [HttpPut("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -99,6 +120,14 @@ namespace FashionApi.Controllers
             }
         }
 
+        /// <summary>
+        /// Xóa sản phẩm (Admin only) - Xóa mềm
+        /// </summary>
+        /// <param name="id">Mã sản phẩm cần xóa</param>
+        /// <returns>Kết quả xóa sản phẩm</returns>
+        /// <response code="200">Xóa sản phẩm thành công</response>
+        /// <response code="404">Không tìm thấy sản phẩm</response>
+        /// <response code="500">Lỗi máy chủ nội bộ</response>
         [HttpDelete("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -125,6 +154,14 @@ namespace FashionApi.Controllers
             }
         }
 
+        /// <summary>
+        /// Lấy thông tin sản phẩm theo mã sản phẩm
+        /// </summary>
+        /// <param name="id">Mã sản phẩm</param>
+        /// <returns>Thông tin chi tiết sản phẩm</returns>
+        /// <response code="200">Lấy sản phẩm thành công</response>
+        /// <response code="404">Không tìm thấy sản phẩm</response>
+        /// <response code="500">Lỗi máy chủ nội bộ</response>
         [HttpGet("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -151,6 +188,12 @@ namespace FashionApi.Controllers
             }
         }
 
+        /// <summary>
+        /// Lấy danh sách tất cả sản phẩm (Admin only)
+        /// </summary>
+        /// <returns>Danh sách tất cả sản phẩm</returns>
+        /// <response code="200">Lấy danh sách sản phẩm thành công</response>
+        /// <response code="500">Lỗi máy chủ nội bộ</response>
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
@@ -170,24 +213,31 @@ namespace FashionApi.Controllers
             }
         }
 
+        /// <summary>
+        /// Tìm kiếm sản phẩm theo các tiêu chí (Admin only)
+        /// </summary>
+        /// <param name="trangThai">Trạng thái sản phẩm (0: Không hoạt động, 1: Hoạt động)</param>
+        /// <param name="maSanPham">Mã sản phẩm cụ thể</param>
+        /// <param name="tenSanPham">Tên sản phẩm (tìm kiếm chứa)</param>
+        /// <returns>Danh sách sản phẩm phù hợp với tiêu chí tìm kiếm</returns>
+        /// <response code="200">Tìm kiếm thành công</response>
+        /// <response code="400">Tham số tìm kiếm không hợp lệ</response>
+        /// <response code="500">Lỗi máy chủ nội bộ</response>
         [HttpGet("search")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> Search(
-            [FromQuery] decimal? giaBan,
-            [FromQuery] int? soLuongNhap,
             [FromQuery] int? trangThai,
-            [FromQuery] string? maVach,
             [FromQuery] int? maSanPham,
             [FromQuery] string? tenSanPham)
         {
             try
             {
-                var sanPhams = await _sanPhamServices.SearchAsync(giaBan, soLuongNhap, trangThai, maVach, maSanPham, tenSanPham);
+                var sanPhams = await _sanPhamServices.SearchAsync(trangThai, maSanPham, tenSanPham);
                 _logger.LogInformation(
-                    "Tìm kiếm sản phẩm thành công, Số lượng: {Count}, GiaBan={GiaBan}, SoLuongNhap={SoLuongNhap}, TrangThai={TrangThai}, MaVach={MaVach}, MaSanPham={MaSanPham}, TenSanPham={TenSanPham}",
-                    sanPhams.Count, giaBan, soLuongNhap, trangThai, maVach, maSanPham, tenSanPham);
+                    "Tìm kiếm sản phẩm thành công, Số lượng: {Count}, TrangThai={TrangThai}, MaSanPham={MaSanPham}, TenSanPham={TenSanPham}",
+                    sanPhams.Count, trangThai, maSanPham, tenSanPham);
                 return Ok(sanPhams);
             }
             catch (ArgumentException ex)
@@ -203,6 +253,13 @@ namespace FashionApi.Controllers
             }
         }
 
+        /// <summary>
+        /// Lọc sản phẩm theo loại danh mục
+        /// </summary>
+        /// <param name="maLoaiDanhMuc">Mã loại danh mục (1: Loại sản phẩm, 2: Thương hiệu, 3: Hashtag)</param>
+        /// <returns>Danh sách sản phẩm thuộc loại danh mục</returns>
+        /// <response code="200">Lọc sản phẩm thành công</response>
+        /// <response code="500">Lỗi máy chủ nội bộ</response>
         [HttpGet("filter/loai-danh-muc/{maLoaiDanhMuc}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
@@ -224,6 +281,13 @@ namespace FashionApi.Controllers
             }
         }
 
+        /// <summary>
+        /// Lấy sản phẩm theo danh mục cụ thể
+        /// </summary>
+        /// <param name="maDanhMuc">Mã danh mục cụ thể</param>
+        /// <returns>Danh sách sản phẩm thuộc danh mục</returns>
+        /// <response code="200">Lấy sản phẩm theo danh mục thành công</response>
+        /// <response code="500">Lỗi máy chủ nội bộ</response>
         [HttpGet("filter/danh-muc/{maDanhMuc}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
@@ -245,6 +309,14 @@ namespace FashionApi.Controllers
             }
         }
 
+        /// <summary>
+        /// Lấy danh sách sản phẩm bán chạy
+        /// </summary>
+        /// <param name="limit">Số lượng sản phẩm tối đa cần lấy (mặc định 10)</param>
+        /// <returns>Danh sách sản phẩm bán chạy nhất</returns>
+        /// <response code="200">Lấy sản phẩm bán chạy thành công</response>
+        /// <response code="400">Tham số limit không hợp lệ</response>
+        /// <response code="500">Lỗi máy chủ nội bộ</response>
         [HttpGet("best-selling")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -273,6 +345,15 @@ namespace FashionApi.Controllers
             }
         }
 
+        /// <summary>
+        /// Lấy sản phẩm theo loại và thương hiệu kết hợp
+        /// </summary>
+        /// <param name="maLoai">Mã loại sản phẩm</param>
+        /// <param name="maThuongHieu">Mã thương hiệu</param>
+        /// <returns>Danh sách sản phẩm thuộc cả loại và thương hiệu</returns>
+        /// <response code="200">Lấy sản phẩm thành công</response>
+        /// <response code="400">Tham số không hợp lệ</response>
+        /// <response code="500">Lỗi máy chủ nội bộ</response>
         [HttpGet("filter/loai-thuong-hieu")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -301,5 +382,262 @@ namespace FashionApi.Controllers
             }
         }
 
+        /// <summary>
+        /// Lấy sản phẩm mới nhất với phân trang - cho User
+        /// </summary>
+        /// <param name="page">Số trang (bắt đầu từ 1)</param>
+        /// <param name="pageSize">Số sản phẩm mỗi trang (mặc định 12)</param>
+        /// <returns>Danh sách sản phẩm với thông tin phân trang</returns>
+        [HttpGet("newest")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> GetNewestProducts(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 12)
+        {
+            if (page <= 0 || pageSize <= 0 || pageSize > 100)
+            {
+                _logger.LogWarning("Tham số phân trang không hợp lệ: Page={Page}, PageSize={PageSize}", page, pageSize);
+                return BadRequest(new { Message = "Số trang phải lớn hơn 0 và kích thước trang từ 1-100." });
+            }
+
+            try
+            {
+                // Lấy tất cả sản phẩm đang hoạt động
+                var allProducts = await _sanPhamServices.GetAllAsync();
+                var activeProducts = allProducts.Where(sp => sp.TrangThai == 1).ToList();
+
+                // Sắp xếp theo ngày tạo mới nhất
+                var sortedProducts = activeProducts
+                    .OrderByDescending(sp => sp.NgayTao)
+                    .ThenBy(sp => sp.TenSanPham)
+                    .ToList();
+
+                // Tính toán phân trang
+                var totalCount = sortedProducts.Count;
+                var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+                var skip = (page - 1) * pageSize;
+
+                var pagedProducts = sortedProducts
+                    .Skip(skip)
+                    .Take(pageSize)
+                    .ToList();
+
+                var result = new
+                {
+                    Data = pagedProducts,
+                    Pagination = new
+                    {
+                        CurrentPage = page,
+                        PageSize = pageSize,
+                        TotalCount = totalCount,
+                        TotalPages = totalPages,
+                        HasNextPage = page < totalPages,
+                        HasPreviousPage = page > 1
+                    }
+                };
+
+                _logger.LogInformation("Lấy sản phẩm mới nhất với phân trang thành công: Page={Page}, PageSize={PageSize}, TotalCount={TotalCount}",
+                    page, pageSize, totalCount);
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy sản phẩm mới nhất với phân trang: Page={Page}, PageSize={PageSize}, StackTrace: {StackTrace}",
+                    page, pageSize, ex.StackTrace);
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { Message = "Lỗi máy chủ nội bộ", Detail = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Lấy sản phẩm bán chạy với phân trang - cho User
+        /// </summary>
+        /// <param name="page">Số trang (bắt đầu từ 1)</param>
+        /// <param name="pageSize">Số sản phẩm mỗi trang (mặc định 12)</param>
+        /// <returns>Danh sách sản phẩm bán chạy với thông tin phân trang</returns>
+        [HttpGet("hot-sale")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> GetHotSaleProducts(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 12)
+        {
+            if (page <= 0 || pageSize <= 0 || pageSize > 100)
+            {
+                _logger.LogWarning("Tham số phân trang không hợp lệ: Page={Page}, PageSize={PageSize}", page, pageSize);
+                return BadRequest(new { Message = "Số trang phải lớn hơn 0 và kích thước trang từ 1-100." });
+            }
+
+            try
+            {
+                // Lấy top 100 sản phẩm bán chạy nhất
+                var hotProducts = await _sanPhamServices.GetBestSellingAsync(100);
+                var activeHotProducts = hotProducts.Where(sp => sp.TrangThai == 1).ToList();
+
+                // Tính toán phân trang
+                var totalCount = activeHotProducts.Count;
+                var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+                var skip = (page - 1) * pageSize;
+
+                var pagedProducts = activeHotProducts
+                    .Skip(skip)
+                    .Take(pageSize)
+                    .ToList();
+
+                var result = new
+                {
+                    Data = pagedProducts,
+                    Pagination = new
+                    {
+                        CurrentPage = page,
+                        PageSize = pageSize,
+                        TotalCount = totalCount,
+                        TotalPages = totalPages,
+                        HasNextPage = page < totalPages,
+                        HasPreviousPage = page > 1
+                    }
+                };
+
+                _logger.LogInformation("Lấy sản phẩm hot sale với phân trang thành công: Page={Page}, PageSize={PageSize}, TotalCount={TotalCount}",
+                    page, pageSize, totalCount);
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy sản phẩm hot sale với phân trang: Page={Page}, PageSize={PageSize}, StackTrace: {StackTrace}",
+                    page, pageSize, ex.StackTrace);
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { Message = "Lỗi máy chủ nội bộ", Detail = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Tìm kiếm và lọc sản phẩm với phân trang - cho User và Admin
+        /// </summary>
+        /// <param name="page">Số trang (bắt đầu từ 1)</param>
+        /// <param name="pageSize">Số sản phẩm mỗi trang (mặc định 12)</param>
+        /// <param name="keyword">Từ khóa tìm kiếm</param>
+        /// <param name="maLoai">Mã loại sản phẩm</param>
+        /// <param name="maThuongHieu">Mã thương hiệu</param>
+        /// <param name="minPrice">Giá tối thiểu</param>
+        /// <param name="maxPrice">Giá tối đa</param>
+        /// <param name="gioiTinh">Giới tính (0: Tất cả, 1: Nam, 2: Nữ, 3: Khác)</param>
+        /// <param name="sortBy">Sắp xếp theo (newest, price_asc, price_desc, rating)</param>
+        /// <returns>Danh sách sản phẩm đã lọc với thông tin phân trang</returns>
+        [HttpGet("filter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> FilterProducts(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 12,
+            [FromQuery] string? keyword = null,
+            [FromQuery] int? maLoai = null,
+            [FromQuery] int? maThuongHieu = null,
+            [FromQuery] decimal? minPrice = null,
+            [FromQuery] decimal? maxPrice = null,
+            [FromQuery] int? gioiTinh = null,
+            [FromQuery] string? sortBy = "newest")
+        {
+            if (page <= 0 || pageSize <= 0 || pageSize > 100)
+            {
+                _logger.LogWarning("Tham số phân trang không hợp lệ: Page={Page}, PageSize={PageSize}", page, pageSize);
+                return BadRequest(new { Message = "Số trang phải lớn hơn 0 và kích thước trang từ 1-100." });
+            }
+
+            try
+            {
+                // Lấy tất cả sản phẩm
+                var allProducts = await _sanPhamServices.GetAllAsync();
+                var filteredProducts = allProducts.Where(sp => sp.TrangThai == 1).ToList();
+
+                // Lọc theo từ khóa
+                if (!string.IsNullOrEmpty(keyword))
+                {
+                    filteredProducts = filteredProducts
+                        .Where(sp => sp.TenSanPham.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
+                                   (sp.MoTa != null && sp.MoTa.Contains(keyword, StringComparison.OrdinalIgnoreCase)))
+                        .ToList();
+                }
+
+                // Lọc theo loại
+                if (maLoai.HasValue)
+                {
+                    filteredProducts = filteredProducts.Where(sp => sp.MaLoai == maLoai.Value).ToList();
+                }
+
+                // Lọc theo thương hiệu
+                if (maThuongHieu.HasValue)
+                {
+                    filteredProducts = filteredProducts.Where(sp => sp.MaThuongHieu == maThuongHieu.Value).ToList();
+                }
+
+                // Lọc theo giới tính
+                if (gioiTinh.HasValue)
+                {
+                    filteredProducts = filteredProducts.Where(sp => sp.GioiTinh == gioiTinh.Value).ToList();
+                }
+
+                // Sắp xếp
+                filteredProducts = sortBy?.ToLower() switch
+                {
+                    "price_asc" => filteredProducts.OrderBy(sp => sp.DanhGiaTrungBinh).ToList(),
+                    "price_desc" => filteredProducts.OrderByDescending(sp => sp.DanhGiaTrungBinh).ToList(),
+                    "rating" => filteredProducts.OrderByDescending(sp => sp.DanhGiaTrungBinh ?? 0).ThenByDescending(sp => sp.SoLuongDanhGia ?? 0).ToList(),
+                    _ => filteredProducts.OrderByDescending(sp => sp.NgayTao).ToList() // newest
+                };
+
+                // Tính toán phân trang
+                var totalCount = filteredProducts.Count;
+                var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+                var skip = (page - 1) * pageSize;
+
+                var pagedProducts = filteredProducts
+                    .Skip(skip)
+                    .Take(pageSize)
+                    .ToList();
+
+                var result = new
+                {
+                    Data = pagedProducts,
+                    Filters = new
+                    {
+                        Keyword = keyword,
+                        MaLoai = maLoai,
+                        MaThuongHieu = maThuongHieu,
+                        MinPrice = minPrice,
+                        MaxPrice = maxPrice,
+                        GioiTinh = gioiTinh,
+                        SortBy = sortBy
+                    },
+                    Pagination = new
+                    {
+                        CurrentPage = page,
+                        PageSize = pageSize,
+                        TotalCount = totalCount,
+                        TotalPages = totalPages,
+                        HasNextPage = page < totalPages,
+                        HasPreviousPage = page > 1
+                    }
+                };
+
+                _logger.LogInformation("Lọc sản phẩm với phân trang thành công: Page={Page}, PageSize={PageSize}, TotalCount={TotalCount}, Filters={@Filters}",
+                    page, pageSize, totalCount, new { keyword, maLoai, maThuongHieu, gioiTinh, sortBy });
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lọc sản phẩm với phân trang: Page={Page}, PageSize={PageSize}, StackTrace: {StackTrace}",
+                    page, pageSize, ex.StackTrace);
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { Message = "Lỗi máy chủ nội bộ", Detail = ex.Message });
+            }
+        }
     }
 }

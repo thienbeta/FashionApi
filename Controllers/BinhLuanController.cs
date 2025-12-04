@@ -1,15 +1,18 @@
-﻿using FashionApi.Models.Create;
+﻿using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using FashionApi.Models.Create;
 using FashionApi.Models.Edit;
 using FashionApi.Models.View;
 using FashionApi.Repository;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace FashionApi.Controllers
 {
+    /// <summary>
+    /// Controller quản lý bình luận và đánh giá sản phẩm
+    /// </summary>
     [Route("api/[controller]")]
     [ApiController]
     public class BinhLuanController : ControllerBase
@@ -17,12 +20,25 @@ namespace FashionApi.Controllers
         private readonly IBinhLuanServices _binhLuanServices;
         private readonly ILogger<BinhLuanController> _logger;
 
+        /// <summary>
+        /// Khởi tạo BinhLuanController với dependency injection
+        /// </summary>
+        /// <param name="binhLuanServices">Service xử lý logic nghiệp vụ bình luận</param>
+        /// <param name="logger">Logger để ghi nhật ký hoạt động</param>
         public BinhLuanController(IBinhLuanServices binhLuanServices, ILogger<BinhLuanController> logger)
         {
             _binhLuanServices = binhLuanServices ?? throw new ArgumentNullException(nameof(binhLuanServices));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
+        /// <summary>
+        /// Tạo mới bình luận cho sản phẩm
+        /// </summary>
+        /// <param name="model">Thông tin tạo bình luận bao gồm tiêu đề, nội dung, đánh giá và hình ảnh</param>
+        /// <returns>Thông tin bình luận vừa tạo</returns>
+        /// <response code="201">Tạo bình luận thành công</response>
+        /// <response code="400">Dữ liệu đầu vào không hợp lệ</response>
+        /// <response code="500">Lỗi máy chủ nội bộ</response>
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -53,6 +69,17 @@ namespace FashionApi.Controllers
             }
         }
 
+        /// <summary>
+        /// Cập nhật thông tin bình luận
+        /// </summary>
+        /// <param name="id">ID bình luận cần cập nhật</param>
+        /// <param name="model">Thông tin cập nhật bình luận</param>
+        /// <param name="newImageFiles">Danh sách hình ảnh mới (tùy chọn)</param>
+        /// <returns>Thông tin bình luận sau khi cập nhật</returns>
+        /// <response code="200">Cập nhật bình luận thành công</response>
+        /// <response code="400">Dữ liệu đầu vào không hợp lệ</response>
+        /// <response code="404">Không tìm thấy bình luận</response>
+        /// <response code="500">Lỗi máy chủ nội bộ</response>
         [HttpPut("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -95,6 +122,14 @@ namespace FashionApi.Controllers
             }
         }
 
+        /// <summary>
+        /// Xóa bình luận - Xóa mềm
+        /// </summary>
+        /// <param name="id">ID bình luận cần xóa</param>
+        /// <returns>Kết quả xóa bình luận</returns>
+        /// <response code="200">Xóa bình luận thành công</response>
+        /// <response code="404">Không tìm thấy bình luận</response>
+        /// <response code="500">Lỗi máy chủ nội bộ</response>
         [HttpDelete("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -120,6 +155,14 @@ namespace FashionApi.Controllers
             }
         }
 
+        /// <summary>
+        /// Lấy thông tin bình luận theo ID
+        /// </summary>
+        /// <param name="id">ID bình luận</param>
+        /// <returns>Thông tin chi tiết bình luận</returns>
+        /// <response code="200">Lấy bình luận thành công</response>
+        /// <response code="404">Không tìm thấy bình luận</response>
+        /// <response code="500">Lỗi máy chủ nội bộ</response>
         [HttpGet("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -145,6 +188,12 @@ namespace FashionApi.Controllers
             }
         }
 
+        /// <summary>
+        /// Lấy danh sách tất cả bình luận
+        /// </summary>
+        /// <returns>Danh sách tất cả bình luận</returns>
+        /// <response code="200">Lấy danh sách bình luận thành công</response>
+        /// <response code="500">Lỗi máy chủ nội bộ</response>
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
@@ -163,6 +212,16 @@ namespace FashionApi.Controllers
             }
         }
 
+        /// <summary>
+        /// Tìm kiếm bình luận theo các tiêu chí
+        /// </summary>
+        /// <param name="danhGia">Đánh giá (1-5 sao)</param>
+        /// <param name="trangThai">Trạng thái bình luận (0: Không hoạt động, 1: Hoạt động)</param>
+        /// <param name="maSanPham">Mã sản phẩm</param>
+        /// <param name="maNguoiDung">Mã người dùng</param>
+        /// <returns>Danh sách bình luận phù hợp với tiêu chí tìm kiếm</returns>
+        /// <response code="200">Tìm kiếm bình luận thành công</response>
+        /// <response code="500">Lỗi máy chủ nội bộ</response>
         [HttpGet("search")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
@@ -182,6 +241,13 @@ namespace FashionApi.Controllers
             }
         }
 
+        /// <summary>
+        /// Lọc bình luận theo trạng thái
+        /// </summary>
+        /// <param name="trangThai">Trạng thái bình luận (0: Không hoạt động, 1: Hoạt động)</param>
+        /// <returns>Danh sách bình luận theo trạng thái</returns>
+        /// <response code="200">Lọc bình luận theo trạng thái thành công</response>
+        /// <response code="500">Lỗi máy chủ nội bộ</response>
         [HttpGet("filter/trang-thai/{trangThai}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
@@ -201,6 +267,13 @@ namespace FashionApi.Controllers
             }
         }
 
+        /// <summary>
+        /// Lọc bình luận theo đánh giá
+        /// </summary>
+        /// <param name="danhGia">Đánh giá (1-5 sao)</param>
+        /// <returns>Danh sách bình luận theo đánh giá</returns>
+        /// <response code="200">Lọc bình luận theo đánh giá thành công</response>
+        /// <response code="500">Lỗi máy chủ nội bộ</response>
         [HttpGet("filter/danh-gia/{danhGia}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
@@ -209,13 +282,13 @@ namespace FashionApi.Controllers
             try
             {
                 var binhLuans = await _binhLuanServices.FilterByDanhGiaAsync(danhGia);
-                _logger.LogInformation("Lọc bình luận theo trạng thái thành công, Số lượng: {Count}, DanhGia={DanhGia}",
+                _logger.LogInformation("Lọc bình luận theo đánh giá thành công, Số lượng: {Count}, DanhGia={DanhGia}",
                     binhLuans.Count, danhGia);
                 return Ok(binhLuans);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi lọc bình luận theo trạng thái: DanhGia={DanhGia}", danhGia);
+                _logger.LogError(ex, "Lỗi khi lọc bình luận theo đánh giá: DanhGia={DanhGia}", danhGia);
                 return StatusCode(StatusCodes.Status500InternalServerError, new { Message = "Lỗi máy chủ nội bộ", Detail = ex.Message });
             }
         }

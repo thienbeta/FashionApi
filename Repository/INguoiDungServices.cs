@@ -13,7 +13,7 @@ namespace FashionApi.Repository
         Task<List<NguoiDungView>> GetAllAsync();
         Task<List<NguoiDungView>> SearchAsync(string keyword);
         Task<List<NguoiDungView>> FilterByRoleAsync(int role);
-        Task<NguoiDungView> LoginAsync(string taiKhoan, string matKhau);
+        Task<LoginResponse> LoginAsync(string taiKhoan, string matKhau);
         Task SendForgotPasswordOtpAsync(string email);
         Task ResetPasswordAsync(QuenMatKhau model);
         Task<bool> CheckAccountExistsAsync(string taiKhoan);

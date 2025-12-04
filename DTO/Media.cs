@@ -11,12 +11,12 @@ namespace FashionApi.DTO
 
         [Required]
         [StringLength(50, ErrorMessage = "Loại media không được vượt quá 50 ký tự")]
-        public string LoaiMedia { get; set; }
+        public string LoaiMedia { get; set; } = null!;
 
         [Required]
         [StringLength(500, ErrorMessage = "Đường dẫn không được vượt quá 500 ký tự")]
         [Url(ErrorMessage = "Đường dẫn phải là URL hợp lệ")]
-        public string DuongDan { get; set; }
+        public string DuongDan { get; set; } = null!;
 
         [StringLength(200, ErrorMessage = "Alt media không được vượt quá 200 ký tự")]
         public string? AltMedia { get; set; }
@@ -38,5 +38,9 @@ namespace FashionApi.DTO
         public int? MaBinhLuan { get; set; }
         [ForeignKey("MaBinhLuan")]
         public virtual BinhLuan? BinhLuanNavigation { get; set; }
+
+        public int? MaGiaoDien { get; set; }
+        [ForeignKey("MaGiaoDien")]
+        public virtual GiaoDien? GiaoDienNavigation { get; set; }
     }
 }

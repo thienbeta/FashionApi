@@ -1,9 +1,12 @@
-﻿using FashionApi.Data;
+﻿using System.Reflection;
+using System.Text;
+using FashionApi.Data;
 using FashionApi.Repository;
 using FashionApi.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,7 +15,8 @@ builder.Logging.AddConsole();
 builder.Logging.AddDebug();
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    // options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnectionDocker")));
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -41,16 +45,65 @@ builder.Services.AddSwaggerGen(c =>
     {
         c.IncludeXmlComments(xmlPath);
     }
+
+    // Thêm JWT Bearer auth to Swagger
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        In = ParameterLocation.Header,
+        Description = "Please enter JWT with Bearer into field",
+        Name = "Authorization",
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            new string[] {}
+        }
+    });
+});
+
+// JWT Authentication
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+        ValidAudience = builder.Configuration["Jwt:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
+    };
+});
+
+// Authorization policies
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
+    options.AddPolicy("UserOnly", policy => policy.RequireRole("User"));
+    options.AddPolicy("AdminOrUser", policy => policy.RequireRole("Admin", "User"));
 });
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAllLocalhost", corsBuilder =>
+    options.AddPolicy("AllowSpecificOrigins", corsBuilder =>
     {
         corsBuilder
-            .AllowAnyOrigin()  // Cho phép tất cả các nguồn gốc
-            .AllowAnyHeader()  // Cho phép tất cả các header
-            .AllowAnyMethod(); // Cho phép tất cả các phương thức HTTP
+            .WithOrigins("http://localhost:3000", "http://localhost:5173", "https://swagger.io", "https://fashionapp.com") // Thay thêm domains sản xuất
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials(); // Quan trọng cho authentication với cookies/credentials
     });
 });
 
@@ -59,11 +112,11 @@ builder.Services.AddMemoryCache();
 builder.Services.AddScoped<IMediaServices, MediaServices>();
 builder.Services.AddScoped<IMemoryCacheServices, MemoryCacheServices>();
 builder.Services.AddScoped<IDanhMucServices, DanhMucServices>();
-builder.Services.AddScoped<IBienTheServices, BienTheServices>();
 builder.Services.AddScoped<ISanPhamServices, SanPhamServices>();
 builder.Services.AddScoped<INguoiDungServices, NguoiDungServices>();
 builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<IBinhLuanServices, BinhLuanServices>();
+builder.Services.AddScoped<IGiaoDienServices, GiaoDienServices>();
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -79,8 +132,10 @@ if (app.Environment.IsDevelopment())
 
 app.UseStaticFiles();
 app.UseHttpsRedirection();
+app.UseAuthentication();
+app.UseAuthorization();
 app.UseRouting();
-app.UseCors("AllowAllLocalhost");
+app.UseCors("AllowSpecificOrigins");
 app.MapControllers();
 
 app.UseExceptionHandler(errorApp =>

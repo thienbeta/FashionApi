@@ -10,7 +10,7 @@ namespace FashionApi.DTO
 
         [Required]
         [StringLength(50, ErrorMessage = "Tên danh mục không được vượt quá 50 ký tự")]
-        public string TenDanhMuc { get; set; }
+        public string TenDanhMuc { get; set; } = null!;
 
         [Required]
         [Range(1, 5, ErrorMessage = "Loại danh mục phải từ 1 đến 5")]
@@ -24,5 +24,8 @@ namespace FashionApi.DTO
 
         [Range(0, 1, ErrorMessage = "Trạng thái phải là 0 hoặc 1")]
         public int TrangThai { get; set; } = 1; // 1: Kích hoạt, 0: Vô hiệu hóa
+
+        // Navigation properties - 1 danh mục có nhiều sản phẩm
+        public virtual ICollection<SanPham> SanPhams { get; set; } = new List<SanPham>();
     }
 }

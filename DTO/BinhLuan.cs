@@ -14,12 +14,12 @@ namespace FashionApi.DTO
         public int MaNguoiDung { get; set; }
         public int? MaSanPham { get; set; }
 
-        public virtual NguoiDung NguoiDungNavigation { get; set; }
-        public virtual SanPham SanPhamNavigation { get; set; }
+        public virtual NguoiDung NguoiDungNavigation { get; set; } = null!;
+        public virtual SanPham SanPhamNavigation { get; set; } = null!;
 
         public virtual ICollection<Media> Medias { get; set; } = new List<Media>();
 
         [NotMapped]
-        public IEnumerable<Media> MediaHinhAnh => Medias?.Where(m => m.LoaiMedia == "image");
+        public IEnumerable<Media> MediaHinhAnh => Medias?.Where(m => m.LoaiMedia == "image") ?? [];
     }
 }
