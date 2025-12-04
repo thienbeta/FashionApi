@@ -33,14 +33,14 @@ namespace FashionApi.Data
                         .HasMaxLength(200)
                         .IsRequired();
 
-                        entity.Property(e => e.MoTa)
-                        .HasColumnType("text");
+                      entity.Property(e => e.MoTa)
+                      .HasMaxLength(500);
 
-                        entity.Property(e => e.Slug)
+                      entity.Property(e => e.Slug)
                         .HasMaxLength(200)
                         .IsRequired();
 
-                        entity.Property(e => e.ChatLieu)
+                        entity.Property(e => e.MaVach)
                         .HasMaxLength(100)
                         .IsRequired();
 

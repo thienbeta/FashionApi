@@ -12,7 +12,7 @@ namespace FashionApi.Models.Create
         public string? MoTa { get; set; }
 
         [StringLength(100, ErrorMessage = "Chất liệu không được vượt quá 100 ký tự")]
-        public string ChatLieu { get; set; }
+        public string MaVach { get; set; }
 
         [Range(0, 3, ErrorMessage = "Giới tính phải từ 0 đến 3")]
         public int GioiTinh { get; set; } // 0: Mặc định, 1: Nam, 2: Nữ, 3: Khác

@@ -22,7 +22,7 @@ namespace FashionApi.DTO
         public string Slug { get; set; } = null!;
 
         [StringLength(100, ErrorMessage = "Chất liệu không được vượt quá 100 ký tự")]
-        public string ChatLieu { get; set; } = null!;
+        public string MaVach { get; set; } = null!;
 
         public DateTime NgayTao { get; set; } = DateTime.UtcNow;
 
