@@ -94,6 +94,20 @@ namespace FashionApi.Services
 
         public async Task<GiaoDienView?> CreateAsync(Models.Create.GiaoDienCreate giaoDienCreate)
         {
+            // Business Logic: Logo chỉ được phép active 1 cái
+            if (giaoDienCreate.LoaiGiaoDien == 1 && giaoDienCreate.TrangThai == 1)
+            {
+                // Disable tất cả Logo khác đang active
+                var activeLogos = await _context.GiaoDiens
+                    .Where(gd => gd.LoaiGiaoDien == 1 && gd.TrangThai == 1)
+                    .ToListAsync();
+
+                foreach (var logo in activeLogos)
+                {
+                    logo.TrangThai = 0;
+                }
+            }
+
             var giaoDien = new GiaoDien
             {
                 TenGiaoDien = giaoDienCreate.TenGiaoDien,
