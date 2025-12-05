@@ -91,6 +91,7 @@ namespace FashionApi.Services
 
                 _cacheServices.Remove("DanhMuc_All");
                 _cacheServices.Remove($"DanhMuc_{danhMuc.MaDanhMuc}");
+                _cacheServices.Remove($"DanhMuc_CategoryType_{danhMuc.LoaiDanhMuc}");
                 _logger.LogDebug("Đã xóa cache: DanhMuc_All, DanhMuc_{MaDanhMuc}", danhMuc.MaDanhMuc);
 
                 return MapToView(danhMuc);
