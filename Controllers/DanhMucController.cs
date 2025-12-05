@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 namespace FashionApi.Controllers
 {
     /// <summary>
-    /// Controller quản lý danh mục sản phẩm (Loại, Thương hiệu, Hashtag, Kích thước, Màu sắc)
+    /// Controller quản lý danh mục sản phẩm (1 Loại, 2 Thương hiệu, 3 Hashtag)
     /// </summary>
     [Route("api/[controller]")]
     [ApiController]
@@ -33,7 +33,7 @@ namespace FashionApi.Controllers
         }
 
         /// <summary>
-        /// Tạo mới danh mục (Loại, Thương hiệu, Hashtag, Kích thước, Màu sắc)
+        /// Tạo mới danh mục (Loại, Thương hiệu, Hashtag)
         /// </summary>
         /// <param name="model">Thông tin tạo danh mục bao gồm tên, loại và hình ảnh</param>
         /// <param name="imageFile">File hình ảnh đại diện cho danh mục</param>
@@ -245,7 +245,7 @@ namespace FashionApi.Controllers
         /// <summary>
         /// Lọc danh mục theo loại
         /// </summary>
-        /// <param name="loaiDanhMuc">Loại danh mục (1: Loại sản phẩm, 2: Thương hiệu, 3: Hashtag, 4: Kích thước, 5: Màu sắc)</param>
+        /// <param name="loaiDanhMuc">Loại danh mục (1: Loại sản phẩm, 2: Thương hiệu, 3: Hashtag)</param>
         /// <returns>Danh sách danh mục theo loại</returns>
         /// <response code="200">Lọc danh mục theo loại thành công</response>
         /// <response code="400">Loại danh mục không hợp lệ (phải từ 1 đến 5)</response>
@@ -253,10 +253,10 @@ namespace FashionApi.Controllers
         [HttpGet("filter/type/{loaiDanhMuc}")]
         public async Task<IActionResult> FilterByCategoryType(int loaiDanhMuc)
         {
-            if (loaiDanhMuc < 1 || loaiDanhMuc > 5)
+            if (loaiDanhMuc < 1 || loaiDanhMuc > 3)
             {
                 _logger.LogWarning("Loại danh mục không hợp lệ: {LoaiDanhMuc}", loaiDanhMuc);
-                return BadRequest(new { Message = "Loại danh mục phải từ 1 đến 5." });
+                return BadRequest(new { Message = "Loại danh mục phải từ 1 đến 3." });
             }
 
             try
