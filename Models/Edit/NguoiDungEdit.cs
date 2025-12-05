@@ -7,7 +7,7 @@
         public DateTime? NgaySinh { get; set; }
         public string? Sdt { get; set; }
         public string Email { get; set; }
-        public string TaiKhoan { get; set; }
+        public string? TaiKhoan { get; set; }
         public int VaiTro { get; set; } // 0: Khách hàng, 1: Quản trị viên
         public int TrangThai { get; set; } // 1: Kích hoạt, 0: Vô hiệu hóa
         public string? Avt { get; set; }
