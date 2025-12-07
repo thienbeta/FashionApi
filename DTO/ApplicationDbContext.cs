@@ -258,10 +258,10 @@ namespace FashionApi.Data
                         entity.Property(e => e.TieuDe)
                         .HasMaxLength(200);
 
-                        entity.Property(e => e.NoiDung)
-                        .HasColumnType("text");
+                      entity.Property(e => e.NoiDung)
+                      .HasMaxLength(500);
 
-                        entity.Property(e => e.NgayTao)
+                      entity.Property(e => e.NgayTao)
                         .HasDefaultValueSql("getutcdate()");
 
                         entity.Property(e => e.TrangThai)

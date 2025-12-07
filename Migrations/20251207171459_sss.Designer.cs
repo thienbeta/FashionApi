@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FashionApi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251204142921_sss")]
+    [Migration("20251207171459_sss")]
     partial class sss
     {
         /// <inheritdoc />
@@ -48,7 +48,8 @@ namespace FashionApi.Migrations
                         .HasDefaultValueSql("getutcdate()");
 
                     b.Property<string>("NoiDung")
-                        .HasColumnType("text");
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<string>("TieuDe")
                         .HasMaxLength(200)
