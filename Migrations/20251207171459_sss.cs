@@ -123,7 +123,7 @@ namespace FashionApi.Migrations
                     MaBinhLuan = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     TieuDe = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
-                    NoiDung = table.Column<string>(type: "text", nullable: true),
+                    NoiDung = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     DanhGia = table.Column<int>(type: "int", nullable: true),
                     NgayTao = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getutcdate()"),
                     TrangThai = table.Column<int>(type: "int", nullable: false, defaultValue: 1),

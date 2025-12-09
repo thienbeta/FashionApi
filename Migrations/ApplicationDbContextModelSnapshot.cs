@@ -45,7 +45,8 @@ namespace FashionApi.Migrations
                         .HasDefaultValueSql("getutcdate()");
 
                     b.Property<string>("NoiDung")
-                        .HasColumnType("text");
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<string>("TieuDe")
                         .HasMaxLength(200)
