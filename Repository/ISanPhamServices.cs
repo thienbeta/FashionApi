@@ -11,7 +11,7 @@ namespace FashionApi.Repository
     {
         Task<SanPhamView> CreateAsync(SanPhamCreate model);
         Task<SanPhamView> UpdateAsync(int id, SanPhamEdit model, List<IFormFile>? newImageFiles = null);
-        Task<bool> DeleteAsync(int id);
+        Task<bool> DeleteAsync(int id, bool hardDeleteImages = false);
         Task<SanPhamView> GetByIdAsync(int id);
         Task<List<SanPhamView>> GetAllAsync();
         Task<List<SanPhamView>> SearchAsync(int? trangThai, int? maSanPham, string? tenSanPham);
@@ -19,5 +19,7 @@ namespace FashionApi.Repository
         Task<List<SanPhamView>> GetByDanhMucAsync(int maDanhMuc);
         Task<List<SanPhamView>> GetBestSellingAsync(int limit);
         Task<List<SanPhamView>> GetByLoaiAndThuongHieuAsync(int maLoai, int maThuongHieu);
+        Task<bool> DeleteProductImageAsync(int productId, int mediaId, bool hardDelete = false);
+        Task<BatchDeleteResult> DeleteProductImagesAsync(int productId, List<int> mediaIds, bool hardDelete = false);
     }
 }

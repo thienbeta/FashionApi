@@ -124,6 +124,7 @@ namespace FashionApi.Controllers
         /// Xóa sản phẩm (Admin only) - Xóa mềm
         /// </summary>
         /// <param name="id">Mã sản phẩm cần xóa</param>
+        /// <param name="hardDeleteImages">True: xóa vĩnh viễn file hình ảnh, False: soft delete (mặc định)</param>
         /// <returns>Kết quả xóa sản phẩm</returns>
         /// <response code="200">Xóa sản phẩm thành công</response>
         /// <response code="404">Không tìm thấy sản phẩm</response>
@@ -132,23 +133,110 @@ namespace FashionApi.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> Delete(int id)
+        public async Task<IActionResult> Delete(int id, [FromQuery] bool hardDeleteImages = false)
         {
             try
             {
-                var result = await _sanPhamServices.DeleteAsync(id);
+                var result = await _sanPhamServices.DeleteAsync(id, hardDeleteImages);
                 if (!result)
                 {
                     _logger.LogWarning("Sản phẩm không tồn tại: Id={Id}", id);
                     return NotFound(new { Message = "Sản phẩm không tồn tại." });
                 }
 
-                _logger.LogInformation("Xóa sản phẩm thành công: Id={Id}", id);
+                _logger.LogInformation("Xóa sản phẩm thành công: Id={Id}, HardDeleteImages={HardDeleteImages}", 
+                    id, hardDeleteImages);
                 return Ok(new { Message = "Xóa sản phẩm thành công." });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Lỗi khi xóa sản phẩm: Id={Id}, StackTrace: {StackTrace}", id, ex.StackTrace);
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { Message = "Lỗi máy chủ nội bộ", Detail = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Xóa hình ảnh của sản phẩm (Admin only)
+        /// </summary>
+        /// <param name="productId">Mã sản phẩm</param>
+        /// <param name="mediaId">Mã hình ảnh cần xóa</param>
+        /// <param name="hardDelete">True: xóa vĩnh viễn (bao gồm file vật lý), False: soft delete (mặc định)</param>
+        /// <returns>Kết quả xóa hình ảnh</returns>
+        /// <response code="200">Xóa hình ảnh thành công</response>
+        /// <response code="404">Không tìm thấy hình ảnh</response>
+        /// <response code="500">Lỗi máy chủ nội bộ</response>
+        [HttpDelete("{productId}/images/{mediaId}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> DeleteProductImage(
+            int productId,
+            int mediaId,
+            [FromQuery] bool hardDelete = false)
+        {
+            try
+            {
+                var result = await _sanPhamServices.DeleteProductImageAsync(productId, mediaId, hardDelete);
+
+                if (!result)
+                {
+                    _logger.LogWarning("Không tìm thấy hình ảnh: ProductId={ProductId}, MediaId={MediaId}",
+                        productId, mediaId);
+                    return NotFound(new { Message = "Hình ảnh không tồn tại hoặc không thuộc về sản phẩm này." });
+                }
+
+                _logger.LogInformation("Xóa hình ảnh thành công: ProductId={ProductId}, MediaId={MediaId}, HardDelete={HardDelete}",
+                    productId, mediaId, hardDelete);
+                return Ok(new { Message = hardDelete ? "Xóa hình ảnh vĩnh viễn thành công." : "Xóa hình ảnh thành công." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi xóa hình ảnh: ProductId={ProductId}, MediaId={MediaId}",
+                    productId, mediaId);
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { Message = "Lỗi máy chủ nội bộ", Detail = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Xóa nhiều hình ảnh của sản phẩm cùng lúc (Admin only)
+        /// </summary>
+        /// <param name="productId">Mã sản phẩm</param>
+        /// <param name="request">Danh sách mã hình ảnh cần xóa</param>
+        /// <returns>Kết quả xóa batch</returns>
+        /// <response code="200">Xóa batch thành công</response>
+        /// <response code="400">Dữ liệu không hợp lệ</response>
+        /// <response code="500">Lỗi máy chủ nội bộ</response>
+        [HttpDelete("{productId}/images/batch")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> DeleteProductImagesBatch(
+            int productId,
+            [FromBody] BatchDeleteImageRequest request)
+        {
+            if (request == null || request.MediaIds == null || !request.MediaIds.Any())
+            {
+                return BadRequest(new { Message = "Danh sách hình ảnh không được trống." });
+            }
+
+            try
+            {
+                var result = await _sanPhamServices.DeleteProductImagesAsync(
+                    productId, 
+                    request.MediaIds, 
+                    request.HardDelete);
+
+                _logger.LogInformation(
+                    "Batch delete hoàn thành: ProductId={ProductId}, Success={Success}, Failed={Failed}",
+                    productId, result.SuccessCount, result.FailedCount);
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi xóa batch hình ảnh: ProductId={ProductId}", productId);
                 return StatusCode(StatusCodes.Status500InternalServerError,
                     new { Message = "Lỗi máy chủ nội bộ", Detail = ex.Message });
             }

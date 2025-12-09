@@ -8,5 +8,6 @@ namespace FashionApi.Repository
         Task<string> SaveOptimizedImageAsync(IFormFile file, string subFolder = "images");
         Task<string> SaveCompressedPdfAsync(IFormFile file, string subFolder = "pdfs");
         Task<string> SaveAsZipAsync(IFormFile file, string subFolder = "archives");
+        Task<bool> DeleteImageAsync(string imagePath);
     }
 }

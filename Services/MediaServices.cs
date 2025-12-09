@@ -95,5 +95,30 @@ namespace FashionApi.Services
 
             return $"/uploads/{subFolder}/{zipFileName}";
         }
+
+        public async Task<bool> DeleteImageAsync(string imagePath)
+        {
+            if (string.IsNullOrEmpty(imagePath))
+                return false;
+
+            try
+            {
+                // Remove leading slash and construct full path
+                var fullPath = Path.Combine(_env.WebRootPath, imagePath.TrimStart('/'));
+
+                if (File.Exists(fullPath))
+                {
+                    await Task.Run(() => File.Delete(fullPath));
+                    return true;
+                }
+
+                return false;
+            }
+            catch
+            {
+                // Log error if needed, but return false to indicate failure
+                return false;
+            }
+        }
     }
 }

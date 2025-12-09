@@ -263,9 +263,10 @@ namespace FashionApi.Services
             }
         }
 
-        public async Task<bool> DeleteAsync(int id)
+        public async Task<bool> DeleteAsync(int id, bool hardDeleteImages = false)
         {
-            _logger.LogInformation("Bắt đầu xóa sản phẩm: MaSanPham={Id}", id);
+            _logger.LogInformation("Bắt đầu xóa sản phẩm: MaSanPham={Id}, HardDeleteImages={HardDeleteImages}", 
+                id, hardDeleteImages);
 
             try
             {
@@ -279,15 +280,31 @@ namespace FashionApi.Services
                     return false;
                 }
 
-                // Soft delete
-                sanPham.TrangThai = 0;
-                foreach (var media in sanPham.Medias)
+                // Xử lý media
+                if (hardDeleteImages && sanPham.Medias.Any())
                 {
-                    media.TrangThai = 0;
+                    // Hard delete - xóa file vật lý và record
+                    foreach (var media in sanPham.Medias.ToList())
+                    {
+                        await _mediaServices.DeleteImageAsync(media.DuongDan);
+                        _context.Medias.Remove(media);
+                    }
+                    _logger.LogInformation("Đã hard delete {Count} hình ảnh", sanPham.Medias.Count);
+                }
+                else
+                {
+                    // Soft delete - chỉ đánh dấu
+                    foreach (var media in sanPham.Medias)
+                    {
+                        media.TrangThai = 0;
+                    }
                 }
 
+                // Soft delete sản phẩm
+                sanPham.TrangThai = 0;
+
                 await _context.SaveChangesAsync();
-                _logger.LogInformation("Sản phẩm được xóa mềm thành công: MaSanPham={Id}", id);
+                _logger.LogInformation("Sản phẩm được xóa thành công: MaSanPham={Id}", id);
 
                 // Clear cache
                 _cacheServices.Remove($"SanPham_{id}");
@@ -634,6 +651,114 @@ namespace FashionApi.Services
                     maLoai, maThuongHieu, ex.StackTrace);
                 throw;
             }
+        }
+
+        public async Task<bool> DeleteProductImageAsync(int productId, int mediaId, bool hardDelete = false)
+        {
+            _logger.LogInformation("Bắt đầu xóa hình ảnh sản phẩm: ProductId={ProductId}, MediaId={MediaId}, HardDelete={HardDelete}", 
+                productId, mediaId, hardDelete);
+
+            try
+            {
+                var media = await _context.Medias
+                    .FirstOrDefaultAsync(m => m.MaMedia == mediaId && m.MaSanPham == productId);
+
+                if (media == null)
+                {
+                    _logger.LogWarning("Không tìm thấy hình ảnh: ProductId={ProductId}, MediaId={MediaId}", productId, mediaId);
+                    return false;
+                }
+
+                if (hardDelete)
+                {
+                    // Xóa file vật lý
+                    var deleteFileResult = await _mediaServices.DeleteImageAsync(media.DuongDan);
+                    if (deleteFileResult)
+                    {
+                        _logger.LogInformation("Đã xóa file vật lý: {FilePath}", media.DuongDan);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Không thể xóa file vật lý: {FilePath}", media.DuongDan);
+                    }
+
+                    // Xóa record khỏi database
+                    _context.Medias.Remove(media);
+                    _logger.LogInformation("Đã xóa record khỏi database: MediaId={MediaId}", mediaId);
+                }
+                else
+                {
+                    // Soft delete - chỉ cập nhật trạng thái
+                    media.TrangThai = 0;
+                    _logger.LogInformation("Đã soft delete hình ảnh: MediaId={MediaId}", mediaId);
+                }
+
+                await _context.SaveChangesAsync();
+
+                // Clear cache
+                _cacheServices.Remove($"SanPham_{productId}");
+                _cacheServices.Remove("SanPham_All");
+
+                _logger.LogInformation("Xóa hình ảnh sản phẩm thành công: ProductId={ProductId}, MediaId={MediaId}", 
+                    productId, mediaId);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi xóa hình ảnh sản phẩm: ProductId={ProductId}, MediaId={MediaId}, StackTrace: {StackTrace}", 
+                    productId, mediaId, ex.StackTrace);
+                throw;
+            }
+        }
+
+        public async Task<BatchDeleteResult> DeleteProductImagesAsync(int productId, List<int> mediaIds, bool hardDelete = false)
+        {
+            var result = new BatchDeleteResult
+            {
+                TotalRequested = mediaIds?.Count ?? 0
+            };
+
+            if (mediaIds == null || !mediaIds.Any())
+            {
+                result.Message = "Danh sách hình ảnh trống.";
+                return result;
+            }
+
+            _logger.LogInformation("Bắt đầu xóa batch hình ảnh: ProductId={ProductId}, Count={Count}, HardDelete={HardDelete}",
+                productId, mediaIds.Count, hardDelete);
+
+            foreach (var mediaId in mediaIds)
+            {
+                try
+                {
+                    var success = await DeleteProductImageAsync(productId, mediaId, hardDelete);
+                    
+                    if (success)
+                    {
+                        result.SuccessCount++;
+                        result.SuccessfulIds.Add(mediaId);
+                    }
+                    else
+                    {
+                        result.FailedCount++;
+                        result.FailedIds.Add(mediaId);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Lỗi khi xóa hình ảnh trong batch: MediaId={MediaId}", mediaId);
+                    result.FailedCount++;
+                    result.FailedIds.Add(mediaId);
+                }
+            }
+
+            result.Message = $"Xóa thành công {result.SuccessCount}/{result.TotalRequested} hình ảnh.";
+            
+            _logger.LogInformation("Hoàn thành xóa batch: Success={Success}, Failed={Failed}",
+                result.SuccessCount, result.FailedCount);
+
+            return result;
         }
 
         private SanPhamView MapToView(SanPham sanPham)
