@@ -7,6 +7,7 @@ using FashionApi.Models.View;
 using FashionApi.Repository;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace FashionApi.Controllers
 {
@@ -39,6 +40,7 @@ namespace FashionApi.Controllers
         /// <response code="201">Tạo bình luận thành công</response>
         /// <response code="400">Dữ liệu đầu vào không hợp lệ</response>
         /// <response code="500">Lỗi máy chủ nội bộ</response>
+        [Authorize]
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -80,6 +82,7 @@ namespace FashionApi.Controllers
         /// <response code="400">Dữ liệu đầu vào không hợp lệ</response>
         /// <response code="404">Không tìm thấy bình luận</response>
         /// <response code="500">Lỗi máy chủ nội bộ</response>
+        [Authorize]
         [HttpPut("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -130,6 +133,7 @@ namespace FashionApi.Controllers
         /// <response code="200">Xóa bình luận thành công</response>
         /// <response code="404">Không tìm thấy bình luận</response>
         /// <response code="500">Lỗi máy chủ nội bộ</response>
+        [Authorize]
         [HttpDelete("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]

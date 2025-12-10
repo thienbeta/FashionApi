@@ -6,7 +6,9 @@ using FashionApi.Models.Edit;
 using FashionApi.Models.View;
 using FashionApi.Repository;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace FashionApi.Controllers
 {
@@ -33,6 +35,7 @@ namespace FashionApi.Controllers
         /// <response code="201">Tạo sản phẩm thành công</response>
         /// <response code="400">Dữ liệu đầu vào không hợp lệ</response>
         /// <response code="500">Lỗi máy chủ nội bộ</response>
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -76,6 +79,7 @@ namespace FashionApi.Controllers
         /// <response code="400">Dữ liệu đầu vào không hợp lệ</response>
         /// <response code="404">Không tìm thấy sản phẩm</response>
         /// <response code="500">Lỗi máy chủ nội bộ</response>
+        [Authorize(Roles = "Admin")]
         [HttpPut("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -129,6 +133,7 @@ namespace FashionApi.Controllers
         /// <response code="200">Xóa sản phẩm thành công</response>
         /// <response code="404">Không tìm thấy sản phẩm</response>
         /// <response code="500">Lỗi máy chủ nội bộ</response>
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -166,6 +171,7 @@ namespace FashionApi.Controllers
         /// <response code="200">Xóa hình ảnh thành công</response>
         /// <response code="404">Không tìm thấy hình ảnh</response>
         /// <response code="500">Lỗi máy chủ nội bộ</response>
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{productId}/images/{mediaId}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -208,6 +214,7 @@ namespace FashionApi.Controllers
         /// <response code="200">Xóa batch thành công</response>
         /// <response code="400">Dữ liệu không hợp lệ</response>
         /// <response code="500">Lỗi máy chủ nội bộ</response>
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{productId}/images/batch")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]

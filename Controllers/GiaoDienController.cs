@@ -3,6 +3,7 @@ using FashionApi.DTO;
 using FashionApi.Models.View;
 using FashionApi.Repository;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace FashionApi.Controllers
 {
@@ -176,6 +177,7 @@ namespace FashionApi.Controllers
         /// <response code="201">Tạo giao diện thành công</response>
         /// <response code="400">Dữ liệu đầu vào không hợp lệ</response>
         /// <response code="500">Lỗi hệ thống khi tạo giao diện mới</response>
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         public async Task<ActionResult<GiaoDienView>> Create([FromBody] Models.Create.GiaoDienCreate giaoDienCreate)
         {
@@ -211,6 +213,7 @@ namespace FashionApi.Controllers
         /// <response code="400">Dữ liệu đầu vào không hợp lệ</response>
         /// <response code="404">Không tìm thấy giao diện với ID tương ứng</response>
         /// <response code="500">Lỗi hệ thống khi cập nhật giao diện</response>
+        [Authorize(Roles = "Admin")]
         [HttpPut("{id}")]
         public async Task<ActionResult<GiaoDienView>> Update(int id, [FromBody] Models.Edit.GiaoDienEdit giaoDienEdit)
         {
@@ -244,6 +247,7 @@ namespace FashionApi.Controllers
         /// <response code="200">Xóa giao diện thành công</response>
         /// <response code="404">Không tìm thấy giao diện với ID tương ứng</response>
         /// <response code="500">Lỗi hệ thống khi xóa giao diện</response>
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
@@ -274,6 +278,7 @@ namespace FashionApi.Controllers
         /// <response code="400">Dữ liệu đầu vào không hợp lệ</response>
         /// <response code="404">Không tìm thấy giao diện với ID tương ứng</response>
         /// <response code="500">Lỗi hệ thống khi thêm media</response>
+        [Authorize(Roles = "Admin")]
         [HttpPost("{id}/media")]
         public async Task<IActionResult> AddMedia(int id, [FromBody] Models.Create.MediaCreate mediaCreate)
         {
@@ -308,6 +313,7 @@ namespace FashionApi.Controllers
         /// <response code="200">Xóa media thành công</response>
         /// <response code="404">Không tìm thấy media trong giao diện tương ứng</response>
         /// <response code="500">Lỗi hệ thống khi xóa media</response>
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id}/media/{mediaId}")]
         public async Task<IActionResult> RemoveMedia(int id, int mediaId)
         {
@@ -362,6 +368,7 @@ namespace FashionApi.Controllers
         /// <response code="400">Dữ liệu đầu vào không hợp lệ</response>
         /// <response code="404">Không tìm thấy giao diện với ID tương ứng</response>
         /// <response code="500">Lỗi hệ thống khi upload media</response>
+        [Authorize(Roles = "Admin")]
         [HttpPost("{id}/upload-media")]
         public async Task<IActionResult> UploadMedia(int id, IFormFile file, string? altText = null, string? link = null)
         {

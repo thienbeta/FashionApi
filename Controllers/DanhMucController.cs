@@ -7,6 +7,7 @@ using FashionApi.Models.View;
 using FashionApi.Repository;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Logging;
 
 namespace FashionApi.Controllers
@@ -41,6 +42,7 @@ namespace FashionApi.Controllers
         /// <response code="200">Tạo danh mục thành công</response>
         /// <response code="400">Dữ liệu đầu vào không hợp lệ</response>
         /// <response code="500">Lỗi máy chủ nội bộ</response>
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         public async Task<IActionResult> Create([FromForm] DanhMucCreate model, IFormFile imageFile)
         {
@@ -74,6 +76,7 @@ namespace FashionApi.Controllers
         /// <response code="400">Dữ liệu đầu vào không hợp lệ</response>
         /// <response code="404">Không tìm thấy danh mục</response>
         /// <response code="500">Lỗi máy chủ nội bộ</response>
+        [Authorize(Roles = "Admin")]
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, [FromForm] DanhMucEdit model, IFormFile imageFile = null)
         {
@@ -115,6 +118,7 @@ namespace FashionApi.Controllers
         /// <response code="200">Xóa danh mục thành công</response>
         /// <response code="404">Không tìm thấy danh mục</response>
         /// <response code="500">Lỗi máy chủ nội bộ</response>
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
