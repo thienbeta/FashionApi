@@ -154,11 +154,14 @@ namespace FashionApi.Services
 
                     if (!string.IsNullOrEmpty(danhMuc.HinhAnh))
                     {
-                        var oldImagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", danhMuc.HinhAnh.TrimStart('/'));
-                        if (File.Exists(oldImagePath))
+                        var oldImageDeleted = await _mediaServices.DeleteImageAsync(danhMuc.HinhAnh);
+                        if (oldImageDeleted)
                         {
-                            File.Delete(oldImagePath);
-                            _logger.LogInformation("Đã xóa hình ảnh cũ: {OldImagePath}", oldImagePath);
+                            _logger.LogInformation("Đã xóa hình ảnh cũ: {OldImageUrl}", danhMuc.HinhAnh);
+                        }
+                        else
+                        {
+                            _logger.LogWarning("Không thể xóa hình ảnh cũ: {OldImageUrl}", danhMuc.HinhAnh);
                         }
                     }
 
@@ -227,11 +230,14 @@ namespace FashionApi.Services
 
                 if (!string.IsNullOrEmpty(danhMuc.HinhAnh))
                 {
-                    var imagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", danhMuc.HinhAnh.TrimStart('/'));
-                    if (File.Exists(imagePath))
+                    var imageDeleted = await _mediaServices.DeleteImageAsync(danhMuc.HinhAnh);
+                    if (imageDeleted)
                     {
-                        File.Delete(imagePath);
-                        _logger.LogInformation("Đã xóa hình ảnh: {ImagePath}", imagePath);
+                        _logger.LogInformation("Đã xóa hình ảnh danh mục: {ImageUrl}", danhMuc.HinhAnh);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Không thể xóa hình ảnh danh mục: {ImageUrl}", danhMuc.HinhAnh);
                     }
                 }
 

@@ -1,4 +1,8 @@
-﻿using FashionApi.Data;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using FashionApi.Data;
 using FashionApi.DTO;
 using FashionApi.Models.Create;
 using FashionApi.Models.Edit;
@@ -7,10 +11,6 @@ using FashionApi.Repository;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace FashionApi.Services
 {
@@ -184,6 +184,8 @@ namespace FashionApi.Services
                         };
                         _context.Medias.Add(media);
                     }
+
+                    _logger.LogInformation("Đã thêm {Count} hình ảnh mới cho bình luận: MaBinhLuan={Id}", newImageFiles.Count, id);
                 }
 
                 await _context.SaveChangesAsync();
@@ -219,6 +221,26 @@ namespace FashionApi.Services
                     return false;
                 }
 
+                // Xóa các file hình ảnh liên kết trước khi xóa mềm
+                if (binhLuan.Medias != null && binhLuan.Medias.Any())
+                {
+                    foreach (var media in binhLuan.Medias)
+                    {
+                        if (!string.IsNullOrEmpty(media.DuongDan))
+                        {
+                            var fileDeleted = await _mediaServices.DeleteImageAsync(media.DuongDan);
+                            if (fileDeleted)
+                            {
+                                _logger.LogInformation("Đã xóa file hình ảnh: {ImagePath}", media.DuongDan);
+                            }
+                            else
+                            {
+                                _logger.LogWarning("Không thể xóa file hình ảnh: {ImagePath}", media.DuongDan);
+                            }
+                        }
+                    }
+                }
+
                 // Soft delete
                 binhLuan.TrangThai = 0;
                 foreach (var media in binhLuan.Medias)
@@ -234,6 +256,7 @@ namespace FashionApi.Services
                 if (binhLuan.MaSanPham.HasValue)
                     _cacheServices.Remove($"BinhLuan_SanPham_{binhLuan.MaSanPham.Value}");
 
+                _logger.LogInformation("Xóa bình luận thành công: MaBinhLuan={Id}", id);
                 return true;
             }
             catch (Exception ex)

@@ -135,6 +135,20 @@ namespace FashionApi.Services
                 // Xử lý ảnh đại diện nếu có
                 if (imageFile != null)
                 {
+                    // Xóa ảnh đại diện cũ nếu tồn tại
+                    if (!string.IsNullOrEmpty(nguoiDung.Avt))
+                    {
+                        var oldAvatarDeleted = await _mediaServices.DeleteImageAsync(nguoiDung.Avt);
+                        if (oldAvatarDeleted)
+                        {
+                            _logger.LogInformation("Đã xóa ảnh đại diện cũ: {OldAvatarUrl}", nguoiDung.Avt);
+                        }
+                        else
+                        {
+                            _logger.LogWarning("Không thể xóa ảnh đại diện cũ: {OldAvatarUrl}", nguoiDung.Avt);
+                        }
+                    }
+
                     var avatarUrl = await _mediaServices.SaveOptimizedImageAsync(imageFile, "nguoidung");
                     nguoiDung.Avt = avatarUrl;
                     _logger.LogInformation("Hình ảnh đại diện đã được cập nhật: {AvatarUrl}", avatarUrl);
@@ -158,16 +172,61 @@ namespace FashionApi.Services
 
             try
             {
-                var nguoiDung = await _context.NguoiDungs.FindAsync(id);
+                var nguoiDung = await _context.NguoiDungs
+                    .Include(nd => nd.BinhLuans)
+                    .ThenInclude(bl => bl.Medias)
+                    .FirstOrDefaultAsync(nd => nd.MaNguoiDung == id);
+
                 if (nguoiDung == null)
                 {
                     _logger.LogWarning("Người dùng không tồn tại: MaNguoiDung={Id}", id);
                     return false;
                 }
 
+                // Xóa avatar của người dùng nếu có
+                if (!string.IsNullOrEmpty(nguoiDung.Avt))
+                {
+                    var avatarDeleted = await _mediaServices.DeleteImageAsync(nguoiDung.Avt);
+                    if (avatarDeleted)
+                    {
+                        _logger.LogInformation("Đã xóa avatar của người dùng: {AvatarUrl}", nguoiDung.Avt);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Không thể xóa avatar của người dùng: {AvatarUrl}", nguoiDung.Avt);
+                    }
+                }
+
+                // Xóa tất cả các bình luận của người dùng và hình ảnh liên kết
+                if (nguoiDung.BinhLuans != null && nguoiDung.BinhLuans.Any())
+                {
+                    foreach (var binhLuan in nguoiDung.BinhLuans)
+                    {
+                        if (binhLuan.Medias != null && binhLuan.Medias.Any())
+                        {
+                            foreach (var media in binhLuan.Medias)
+                            {
+                                if (!string.IsNullOrEmpty(media.DuongDan))
+                                {
+                                    var mediaDeleted = await _mediaServices.DeleteImageAsync(media.DuongDan);
+                                    if (mediaDeleted)
+                                    {
+                                        _logger.LogInformation("Đã xóa file hình ảnh của bình luận: {ImagePath}", media.DuongDan);
+                                    }
+                                    else
+                                    {
+                                        _logger.LogWarning("Không thể xóa file hình ảnh của bình luận: {ImagePath}", media.DuongDan);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
                 _context.NguoiDungs.Remove(nguoiDung);
                 await _context.SaveChangesAsync();
 
+                _logger.LogInformation("Xóa người dùng thành công: MaNguoiDung={Id}", id);
                 return true;
             }
             catch (Exception ex)

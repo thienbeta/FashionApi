@@ -5,9 +5,9 @@ using FashionApi.Models.Create;
 using FashionApi.Models.Edit;
 using FashionApi.Models.View;
 using FashionApi.Repository;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
 
 namespace FashionApi.Controllers
 {
@@ -39,11 +39,13 @@ namespace FashionApi.Controllers
         /// <returns>Thông tin bình luận vừa tạo</returns>
         /// <response code="201">Tạo bình luận thành công</response>
         /// <response code="400">Dữ liệu đầu vào không hợp lệ</response>
+        /// <response code="401">Không có quyền truy cập</response>
         /// <response code="500">Lỗi máy chủ nội bộ</response>
         [Authorize]
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> Create([FromForm] BinhLuanCreate model)
         {
@@ -55,6 +57,18 @@ namespace FashionApi.Controllers
 
             try
             {
+                // Lấy MaNguoiDung từ JWT token
+                var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+                if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var currentUserId))
+                {
+                    _logger.LogWarning("Không thể xác định người dùng từ JWT token");
+                    return Unauthorized(new { Message = "Token không hợp lệ hoặc đã hết hạn." });
+                }
+
+                // Sử dụng MaNguoiDung từ token thay vì từ model
+                model.MaNguoiDung = currentUserId;
+                _logger.LogInformation("Tạo bình luận cho người dùng: MaNguoiDung={MaNguoiDung}", currentUserId);
+
                 var binhLuan = await _binhLuanServices.CreateAsync(model);
                 _logger.LogInformation("Tạo bình luận thành công: MaBinhLuan={MaBinhLuan}", binhLuan.MaBinhLuan);
                 return CreatedAtAction(nameof(GetById), new { id = binhLuan.MaBinhLuan }, binhLuan);
@@ -80,12 +94,16 @@ namespace FashionApi.Controllers
         /// <returns>Thông tin bình luận sau khi cập nhật</returns>
         /// <response code="200">Cập nhật bình luận thành công</response>
         /// <response code="400">Dữ liệu đầu vào không hợp lệ</response>
+        /// <response code="401">Không có quyền truy cập</response>
+        /// <response code="403">Không có quyền cập nhật bình luận của người khác</response>
         /// <response code="404">Không tìm thấy bình luận</response>
         /// <response code="500">Lỗi máy chủ nội bộ</response>
         [Authorize]
         [HttpPut("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> Update(int id, [FromForm] BinhLuanEdit model, List<IFormFile>? newImageFiles = null)
@@ -104,6 +122,36 @@ namespace FashionApi.Controllers
 
             try
             {
+                // Lấy MaNguoiDung từ JWT token
+                var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+                if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var currentUserId))
+                {
+                    _logger.LogWarning("Không thể xác định người dùng từ JWT token");
+                    return Unauthorized(new { Message = "Token không hợp lệ hoặc đã hết hạn." });
+                }
+
+                // Kiểm tra quyền: người dùng chỉ có thể cập nhật bình luận của chính mình
+                // Admin có thể cập nhật tất cả
+                var userRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+                if (userRole != "Admin")
+                {
+                    // Lấy thông tin bình luận để kiểm tra chủ sở hữu
+                    var existingBinhLuan = await _binhLuanServices.GetByIdAsync(id);
+                    if (existingBinhLuan == null)
+                    {
+                        return NotFound(new { Message = "Bình luận không tồn tại." });
+                    }
+
+                    if (existingBinhLuan.MaNguoiDung != currentUserId)
+                    {
+                        _logger.LogWarning("Người dùng {CurrentUserId} cố gắng cập nhật bình luận của người dùng khác {CommentOwnerId}",
+                            currentUserId, existingBinhLuan.MaNguoiDung);
+                        return Forbid("Bạn chỉ có thể cập nhật bình luận của chính mình.");
+                    }
+                }
+
+                _logger.LogInformation("Cập nhật bình luận: MaBinhLuan={Id}, MaNguoiDung={MaNguoiDung}", id, currentUserId);
+
                 var binhLuan = await _binhLuanServices.UpdateAsync(id, model, newImageFiles);
                 _logger.LogInformation("Cập nhật bình luận thành công: MaBinhLuan={MaBinhLuan}", binhLuan.MaBinhLuan);
                 return Ok(binhLuan);
@@ -131,17 +179,49 @@ namespace FashionApi.Controllers
         /// <param name="id">ID bình luận cần xóa</param>
         /// <returns>Kết quả xóa bình luận</returns>
         /// <response code="200">Xóa bình luận thành công</response>
+        /// <response code="401">Không có quyền truy cập</response>
+        /// <response code="403">Không có quyền xóa bình luận của người khác</response>
         /// <response code="404">Không tìm thấy bình luận</response>
         /// <response code="500">Lỗi máy chủ nội bộ</response>
         [Authorize]
         [HttpDelete("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> Delete(int id)
         {
             try
             {
+                // Lấy MaNguoiDung từ JWT token
+                var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+                if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var currentUserId))
+                {
+                    _logger.LogWarning("Không thể xác định người dùng từ JWT token");
+                    return Unauthorized(new { Message = "Token không hợp lệ hoặc đã hết hạn." });
+                }
+
+                // Kiểm tra quyền: người dùng chỉ có thể xóa bình luận của chính mình
+                // Admin có thể xóa tất cả
+                var userRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+                if (userRole != "Admin")
+                {
+                    // Lấy thông tin bình luận để kiểm tra chủ sở hữu
+                    var existingBinhLuan = await _binhLuanServices.GetByIdAsync(id);
+                    if (existingBinhLuan == null)
+                    {
+                        return NotFound(new { Message = "Bình luận không tồn tại." });
+                    }
+
+                    if (existingBinhLuan.MaNguoiDung != currentUserId)
+                    {
+                        _logger.LogWarning("Người dùng {CurrentUserId} cố gắng xóa bình luận của người dùng khác {CommentOwnerId}",
+                            currentUserId, existingBinhLuan.MaNguoiDung);
+                        return Forbid("Bạn chỉ có thể xóa bình luận của chính mình.");
+                    }
+                }
+
                 var result = await _binhLuanServices.DeleteAsync(id);
                 if (!result)
                 {
@@ -149,7 +229,7 @@ namespace FashionApi.Controllers
                     return NotFound(new { Message = "Bình luận không tồn tại." });
                 }
 
-                _logger.LogInformation("Xóa bình luận thành công: Id={Id}", id);
+                _logger.LogInformation("Xóa bình luận thành công: Id={Id}, MaNguoiDung={MaNguoiDung}", id, currentUserId);
                 return Ok(new { Message = "Xóa bình luận thành công." });
             }
             catch (Exception ex)

@@ -2,6 +2,7 @@ using FashionApi.DTO;
 using FashionApi.Models.View;
 using FashionApi.Repository;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace FashionApi.Services
 {
@@ -9,11 +10,19 @@ namespace FashionApi.Services
     {
         private readonly Data.ApplicationDbContext _context;
         private readonly IMemoryCacheServices _cache;
+        private readonly IMediaServices _mediaServices;
+        private readonly ILogger<GiaoDienServices> _logger;
 
-        public GiaoDienServices(Data.ApplicationDbContext context, IMemoryCacheServices cache)
+        public GiaoDienServices(
+            Data.ApplicationDbContext context,
+            IMemoryCacheServices cache,
+            IMediaServices mediaServices,
+            ILogger<GiaoDienServices> logger)
         {
             _context = context;
             _cache = cache;
+            _mediaServices = mediaServices;
+            _logger = logger;
         }
 
         public async Task<IEnumerable<GiaoDienView>> GetAllAsync()
@@ -181,14 +190,35 @@ namespace FashionApi.Services
 
         public async Task<bool> DeleteAsync(int id)
         {
+            _logger.LogInformation("Bắt đầu xóa giao diện: MaGiaoDien={Id}", id);
+
             var giaoDien = await _context.GiaoDiens
                 .Include(gd => gd.Media)
                 .FirstOrDefaultAsync(gd => gd.MaGiaoDien == id);
 
-            if (giaoDien == null) return false;
+            if (giaoDien == null)
+            {
+                _logger.LogWarning("Giao diện không tồn tại: MaGiaoDien={Id}", id);
+                return false;
+            }
+
+            // Xóa file media liên kết nếu có
+            if (giaoDien.Media != null && !string.IsNullOrEmpty(giaoDien.Media.DuongDan))
+            {
+                var mediaDeleted = await _mediaServices.DeleteImageAsync(giaoDien.Media.DuongDan);
+                if (mediaDeleted)
+                {
+                    _logger.LogInformation("Đã xóa file media của giao diện: {MediaUrl}", giaoDien.Media.DuongDan);
+                }
+                else
+                {
+                    _logger.LogWarning("Không thể xóa file media của giao diện: {MediaUrl}", giaoDien.Media.DuongDan);
+                }
+            }
 
             _context.GiaoDiens.Remove(giaoDien);
             await _context.SaveChangesAsync();
+            _logger.LogInformation("Xóa giao diện thành công: MaGiaoDien={Id}", id);
 
             // Clear cache
             var cacheKey = $"GiaoDien_GetById_{id}";
@@ -364,13 +394,34 @@ namespace FashionApi.Services
 
         public async Task<bool> RemoveMediaAsync(int giaoDienId, int mediaId)
         {
+            _logger.LogInformation("Bắt đầu xóa media khỏi giao diện: GiaoDienId={GiaoDienId}, MediaId={MediaId}", giaoDienId, mediaId);
+
             var media = await _context.Medias
                 .FirstOrDefaultAsync(m => m.MaMedia == mediaId && m.MaGiaoDien == giaoDienId);
 
-            if (media == null) return false;
+            if (media == null)
+            {
+                _logger.LogWarning("Không tìm thấy media: GiaoDienId={GiaoDienId}, MediaId={MediaId}", giaoDienId, mediaId);
+                return false;
+            }
+
+            // Xóa file vật lý nếu có
+            if (!string.IsNullOrEmpty(media.DuongDan))
+            {
+                var fileDeleted = await _mediaServices.DeleteImageAsync(media.DuongDan);
+                if (fileDeleted)
+                {
+                    _logger.LogInformation("Đã xóa file media: {MediaUrl}", media.DuongDan);
+                }
+                else
+                {
+                    _logger.LogWarning("Không thể xóa file media: {MediaUrl}", media.DuongDan);
+                }
+            }
 
             _context.Medias.Remove(media);
             await _context.SaveChangesAsync();
+            _logger.LogInformation("Xóa media khỏi giao diện thành công: GiaoDienId={GiaoDienId}, MediaId={MediaId}", giaoDienId, mediaId);
 
             // Clear cache
             var cacheKey = $"GiaoDien_GetById_{giaoDienId}";

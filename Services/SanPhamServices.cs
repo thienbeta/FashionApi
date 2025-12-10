@@ -214,7 +214,7 @@ namespace FashionApi.Services
                 if (model.SoLuong.HasValue)
                     sanPham.SoLuong = model.SoLuong.Value;
 
-                // Handle new images
+                // Handle new images with proper cleanup
                 if (newImageFiles != null && newImageFiles.Any())
                 {
                     foreach (var imageFile in newImageFiles)
@@ -244,6 +244,8 @@ namespace FashionApi.Services
                         };
                         _context.Medias.Add(media);
                     }
+
+                    _logger.LogInformation("Đã thêm {Count} hình ảnh mới cho sản phẩm: MaSanPham={Id}", newImageFiles.Count, id);
                 }
 
                 await _context.SaveChangesAsync();
@@ -265,7 +267,7 @@ namespace FashionApi.Services
 
         public async Task<bool> DeleteAsync(int id, bool hardDeleteImages = false)
         {
-            _logger.LogInformation("Bắt đầu xóa sản phẩm: MaSanPham={Id}, HardDeleteImages={HardDeleteImages}", 
+            _logger.LogInformation("Bắt đầu xóa sản phẩm: MaSanPham={Id}, HardDeleteImages={HardDeleteImages}",
                 id, hardDeleteImages);
 
             try
@@ -655,7 +657,7 @@ namespace FashionApi.Services
 
         public async Task<bool> DeleteProductImageAsync(int productId, int mediaId, bool hardDelete = false)
         {
-            _logger.LogInformation("Bắt đầu xóa hình ảnh sản phẩm: ProductId={ProductId}, MediaId={MediaId}, HardDelete={HardDelete}", 
+            _logger.LogInformation("Bắt đầu xóa hình ảnh sản phẩm: ProductId={ProductId}, MediaId={MediaId}, HardDelete={HardDelete}",
                 productId, mediaId, hardDelete);
 
             try
@@ -699,14 +701,14 @@ namespace FashionApi.Services
                 _cacheServices.Remove($"SanPham_{productId}");
                 _cacheServices.Remove("SanPham_All");
 
-                _logger.LogInformation("Xóa hình ảnh sản phẩm thành công: ProductId={ProductId}, MediaId={MediaId}", 
+                _logger.LogInformation("Xóa hình ảnh sản phẩm thành công: ProductId={ProductId}, MediaId={MediaId}",
                     productId, mediaId);
 
                 return true;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi xóa hình ảnh sản phẩm: ProductId={ProductId}, MediaId={MediaId}, StackTrace: {StackTrace}", 
+                _logger.LogError(ex, "Lỗi khi xóa hình ảnh sản phẩm: ProductId={ProductId}, MediaId={MediaId}, StackTrace: {StackTrace}",
                     productId, mediaId, ex.StackTrace);
                 throw;
             }
@@ -733,7 +735,7 @@ namespace FashionApi.Services
                 try
                 {
                     var success = await DeleteProductImageAsync(productId, mediaId, hardDelete);
-                    
+
                     if (success)
                     {
                         result.SuccessCount++;
@@ -754,7 +756,7 @@ namespace FashionApi.Services
             }
 
             result.Message = $"Xóa thành công {result.SuccessCount}/{result.TotalRequested} hình ảnh.";
-            
+
             _logger.LogInformation("Hoàn thành xóa batch: Success={Success}, Failed={Failed}",
                 result.SuccessCount, result.FailedCount);
 
