@@ -7,22 +7,24 @@ namespace FashionApi.Services
     {
         public static string HashPassword(string password)
         {
-            using (SHA256 sha256Hash = SHA256.Create())
-            {
-                byte[] bytes = sha256Hash.ComputeHash(Encoding.UTF8.GetBytes(password));
-                StringBuilder builder = new StringBuilder();
-                for (int i = 0; i < bytes.Length; i++)
-                {
-                    builder.Append(bytes[i].ToString("x2"));
-                }
-                return builder.ToString();
-            }
+            return BCrypt.Net.BCrypt.HashPassword(password);
         }
 
         public static bool VerifyPassword(string enteredPassword, string storedHash)
         {
-            string hashedEnteredPassword = HashPassword(enteredPassword);
-            return string.Equals(hashedEnteredPassword, storedHash, StringComparison.OrdinalIgnoreCase);
+            // Fallback for old SHA256 hashes if necessary, but best to migrate.
+            // For now, assuming fresh DB or migration, we just verify using BCrypt.
+            // If the stored hash doesn't look like a BCrypt hash, we could fall back, 
+            // but let's stick to secure default first.
+            try 
+            {
+                return BCrypt.Net.BCrypt.Verify(enteredPassword, storedHash);
+            }
+            catch (Exception)
+            {
+                // If verify fails (e.g. invalid salt format because it's SHA256), return false
+                return false;
+            }
         }
     }
 }

@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading.Tasks;
 using FashionApi.DTO;
 using FashionApi.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -12,15 +15,84 @@ namespace FashionApi.Data
 {
     public static class DataSeeder
     {
+        private static string HashPasswordOldMethod(string password)
+        {
+            using (SHA256 sha256Hash = SHA256.Create())
+            {
+                byte[] bytes = sha256Hash.ComputeHash(Encoding.UTF8.GetBytes(password));
+                StringBuilder builder = new StringBuilder();
+                for (int i = 0; i < bytes.Length; i++)
+                {
+                    builder.Append(bytes[i].ToString("x2"));
+                }
+                return builder.ToString();
+            }
+        }
+
+        private static async Task MigrateExistingPasswords(ApplicationDbContext context, ILogger logger)
+        {
+            var existingUsers = await context.NguoiDungs
+                .Where(u => u.MatKhau != null && !u.MatKhau.StartsWith("$")) // BCrypt hashes start with $
+                .ToListAsync();
+
+            if (existingUsers.Any())
+            {
+                logger?.LogInformation($"Tìm thấy {existingUsers.Count} người dùng với mật khẩu cũ, bắt đầu migration...");
+
+                // Danh sách mật khẩu mặc định để thử
+                var defaultPasswords = new[] { "admin123@A", "user123@A", "user123@Aa", "password123" };
+
+                foreach (var user in existingUsers)
+                {
+                    bool passwordMigrated = false;
+
+                    // Thử các mật khẩu phổ biến
+                    foreach (var defaultPassword in defaultPasswords)
+                    {
+                        var oldHash = HashPasswordOldMethod(defaultPassword);
+                        if (oldHash.Equals(user.MatKhau, StringComparison.OrdinalIgnoreCase))
+                        {
+                            // Migrate to BCrypt
+                            user.MatKhau = PasswordHasher.HashPassword(defaultPassword);
+                            passwordMigrated = true;
+                            logger?.LogInformation($"Đã migrate mật khẩu cho user: {user.TaiKhoan}");
+                            break;
+                        }
+                    }
+
+                    if (!passwordMigrated)
+                    {
+                        logger?.LogWarning($"Không thể migrate mật khẩu cho user: {user.TaiKhoan}. Vui lòng reset password thủ công.");
+                    }
+                }
+
+                await context.SaveChangesAsync();
+                logger?.LogInformation("Hoàn thành migration mật khẩu.");
+            }
+        }
+
         public static async Task SeedAsync(IServiceProvider services)
         {
             using var scope = services.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             var logger = scope.ServiceProvider.GetService<ILoggerFactory>()?.CreateLogger("DataSeeder");
+            var config = scope.ServiceProvider.GetService<IConfiguration>();
 
             try
             {
-                // Nếu đã có user thì bỏ qua
+                // Kiểm tra và migrate mật khẩu từ phương thức cũ sang mới (nếu được bật trong cấu hình)
+                var passwordMigrationEnabled = config?.GetValue<bool>("PasswordMigration:Enabled") ?? true;
+                if (passwordMigrationEnabled)
+                {
+                    logger?.LogInformation("Bắt đầu kiểm tra và migrate mật khẩu từ phương thức cũ sang mới...");
+                    await MigrateExistingPasswords(context, logger);
+                }
+                else
+                {
+                    logger?.LogInformation("Password migration bị tắt trong cấu hình, bỏ qua việc kiểm tra và migrate mật khẩu.");
+                }
+
+                // Nếu đã có user thì bỏ qua seed dữ liệu
                 if (await context.NguoiDungs.AnyAsync())
                 {
                     logger?.LogInformation("Người dùng đã tồn tại, bỏ qua seed dữ liệu.");
