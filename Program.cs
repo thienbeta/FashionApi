@@ -15,8 +15,8 @@ builder.Logging.AddConsole();
 builder.Logging.AddDebug();
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-// options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnectionDocker")));
+options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+// options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnectionDocker")));
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -28,10 +28,10 @@ builder.Services.AddControllers()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo
+    c.SwaggerDoc("v2", new OpenApiInfo
     {
         Title = "HoaiThu.Vn API",
-        Version = "v1",
+        Version = "v2",
         Description = "API quản lý sản phẩm thời trang, thương hiệu và các thực thể liên quan",
         Contact = new OpenApiContact
         {
@@ -39,6 +39,9 @@ builder.Services.AddSwaggerGen(c =>
             Email = "contact.hoaithu.vn@gmail.com"
         }
     });
+
+    // Explicitly set OpenAPI version
+    c.CustomSchemaIds(type => type.FullName);
 
     var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFilename);
@@ -124,12 +127,18 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
 }
+// Swagger documentation (enable in all environments for Azure deployment)
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "HoaiThu.Vn API v1");
+    c.SwaggerEndpoint("/swagger/v2/swagger.json", "HoaiThu.Vn API v2");
     c.RoutePrefix = "swagger";
     c.InjectStylesheet("/swagger-ui/swagger-ui.css");
+    c.DocumentTitle = "HoaiThu.Vn API Documentation";
+    c.EnableDeepLinking();
+    c.DisplayRequestDuration();
+    c.ShowExtensions();
+    c.ShowCommonExtensions();
 });
 
 app.UseStaticFiles();
@@ -148,13 +157,14 @@ app.UseExceptionHandler(errorApp =>
         if (error != null)
         {
             var logger = context.RequestServices.GetService<ILogger<Program>>();
-            logger.LogError(error.Error, "Lỗi không xử lý được: {ErrorMessage}", error.Error.Message);
+            logger?.LogError(error.Error, "Lỗi không xử lý được: {ErrorMessage}", error.Error.Message);
             context.Response.StatusCode = 500;
             context.Response.ContentType = "application/json";
             await context.Response.WriteAsJsonAsync(new
             {
                 Message = "Lỗi máy chủ nội bộ",
-                Detail = app.Environment.IsDevelopment() ? error.Error.Message : "Đã xảy ra lỗi không mong muốn"
+                Detail = app.Environment.IsDevelopment() ? error.Error.Message : "Đã xảy ra lỗi không mong muốn",
+                Timestamp = DateTime.UtcNow
             });
         }
     });
@@ -202,4 +212,4 @@ catch (Exception ex)
     logger?.LogError(ex, "Lỗi khi seed dữ liệu ban đầu: {Message}", ex.Message);
 }
 
-app.Run("http://0.0.0.0:5083");
+app.Run();
