@@ -227,7 +227,7 @@ namespace FashionApi.Data
                     new DanhMuc { TenDanhMuc = "Chanel", LoaiDanhMuc = 2, HinhAnh = "/uploads/danhmuc/f77e4077-e02d-412c-a9ce-881b65e82de9.webp", NgayTao = DateTime.UtcNow, TrangThai = 1 },
 
                     // Hashtag (3)
-                    new DanhMuc { TenDanhMuc = "#Fashion2024", LoaiDanhMuc = 3, HinhAnh = null, NgayTao = DateTime.UtcNow, TrangThai = 1 },
+                    new DanhMuc { TenDanhMuc = "#HoaiThuVn2024", LoaiDanhMuc = 3, HinhAnh = null, NgayTao = DateTime.UtcNow, TrangThai = 1 },
                     new DanhMuc { TenDanhMuc = "#SummerStyle", LoaiDanhMuc = 3, HinhAnh = null, NgayTao = DateTime.UtcNow, TrangThai = 1 },
                     new DanhMuc { TenDanhMuc = "#Streetwear", LoaiDanhMuc = 3, HinhAnh = null, NgayTao = DateTime.UtcNow, TrangThai = 1 },
                     new DanhMuc { TenDanhMuc = "#Minimalist", LoaiDanhMuc = 3, HinhAnh = null, NgayTao = DateTime.UtcNow, TrangThai = 1 },
@@ -313,17 +313,8 @@ namespace FashionApi.Data
                 // Seed GiaoDien
                 var giaoDiens = new List<GiaoDien>
                 {
-                    new GiaoDien { TenGiaoDien = "Logo chính", LoaiGiaoDien = 1, MoTa = "Logo thương hiệu chính", MetaTitle = "Fashion Logo", MetaDescription = "Logo của thương hiệu thời trang", MetaKeywords = "logo, fashion", NgayTao = DateTime.UtcNow, TrangThai = 1 },
-                    new GiaoDien { TenGiaoDien = "Banner trang chủ", LoaiGiaoDien = 2, MoTa = "Banner quảng cáo trang chủ", MetaTitle = "Main Banner", MetaDescription = "Banner chính của website", MetaKeywords = "banner, main", NgayTao = DateTime.UtcNow, TrangThai = 1 },
-                    new GiaoDien { TenGiaoDien = "Slider sản phẩm", LoaiGiaoDien = 3, MoTa = "Slider giới thiệu sản phẩm", MetaTitle = "Product Slider", MetaDescription = "Slider sản phẩm nổi bật", MetaKeywords = "slider, product", NgayTao = DateTime.UtcNow, TrangThai = 1 },
-                    new GiaoDien { TenGiaoDien = "Logo phụ", LoaiGiaoDien = 1, MoTa = "Logo nhỏ cho footer", MetaTitle = "Secondary Logo", MetaDescription = "Logo phụ của thương hiệu", MetaKeywords = "logo, secondary", NgayTao = DateTime.UtcNow, TrangThai = 0 },
-                    new GiaoDien { TenGiaoDien = "Banner khuyến mãi", LoaiGiaoDien = 2, MoTa = "Banner quảng cáo khuyến mãi", MetaTitle = "Promo Banner", MetaDescription = "Banner khuyến mãi đặc biệt", MetaKeywords = "banner, promo", NgayTao = DateTime.UtcNow, TrangThai = 1 },
-                    new GiaoDien { TenGiaoDien = "Slider thương hiệu", LoaiGiaoDien = 3, MoTa = "Slider các thương hiệu đối tác", MetaTitle = "Brand Slider", MetaDescription = "Slider thương hiệu", MetaKeywords = "slider, brand", NgayTao = DateTime.UtcNow, TrangThai = 1 },
-                    new GiaoDien { TenGiaoDien = "Logo mobile", LoaiGiaoDien = 1, MoTa = "Logo dành cho mobile", MetaTitle = "Mobile Logo", MetaDescription = "Logo responsive cho mobile", MetaKeywords = "logo, mobile", NgayTao = DateTime.UtcNow, TrangThai = 0 },
-                    new GiaoDien { TenGiaoDien = "Banner footer", LoaiGiaoDien = 2, MoTa = "Banner cuối trang", MetaTitle = "Footer Banner", MetaDescription = "Banner ở footer", MetaKeywords = "banner, footer", NgayTao = DateTime.UtcNow, TrangThai = 1 },
-                    new GiaoDien { TenGiaoDien = "Slider đánh giá", LoaiGiaoDien = 3, MoTa = "Slider đánh giá khách hàng", MetaTitle = "Review Slider", MetaDescription = "Slider đánh giá", MetaKeywords = "slider, review", NgayTao = DateTime.UtcNow, TrangThai = 1 },
-                    new GiaoDien { TenGiaoDien = "Logo favicon", LoaiGiaoDien = 1, MoTa = "Icon favicon", MetaTitle = "Favicon", MetaDescription = "Icon trang web", MetaKeywords = "favicon, icon", NgayTao = DateTime.UtcNow, TrangThai = 0 },
-                    new GiaoDien { TenGiaoDien = "Banner sidebar", LoaiGiaoDien = 2, MoTa = "Banner thanh bên", MetaTitle = "Sidebar Banner", MetaDescription = "Banner sidebar", MetaKeywords = "banner, sidebar", NgayTao = DateTime.UtcNow, TrangThai = 1 }
+                    new GiaoDien { TenGiaoDien = "Logo chính", LoaiGiaoDien = 1, MoTa = "Logo thương hiệu chính", MetaTitle = "HoaiThu.Vn Logo", MetaDescription = "Logo của thương hiệu thời trang HoaiThu.Vn", MetaKeywords = "logo, hoaithu.vn", NgayTao = DateTime.UtcNow, TrangThai = 1 },
+                    new GiaoDien { TenGiaoDien = "Logo phụ", LoaiGiaoDien = 1, MoTa = "Logo nhỏ/phụ", MetaTitle = "Secondary Logo", MetaDescription = "Logo phụ của thương hiệu", MetaKeywords = "logo, secondary", NgayTao = DateTime.UtcNow, TrangThai = 0 }
                 };
 
                 context.GiaoDiens.AddRange(giaoDiens);
@@ -414,16 +405,30 @@ namespace FashionApi.Data
                     "/uploads/sanpham/32d04d56-9910-42b6-bad2-a0974d49e4e0.webp"
                 };
 
-                for (int i = 0; i < 11; i++)
+                for (int i = 0; i < giaoDienIds.Count; i++)
                 {
+                    string mediaUrl;
+                    int trangThai;
+
+                    if (i == 0) // Logo chính active
+                    {
+                        mediaUrl = "/uploads/logo/origin.png";
+                        trangThai = 1;
+                    }
+                    else // Logo phụ (inactive)
+                    {
+                        mediaUrl = "/uploads/logo/origin-v1.png";
+                        trangThai = 0;
+                    }
+
                     medias.Add(new Media
                     {
                         LoaiMedia = "image",
-                        DuongDan = giaoDienMediaUrls[i],
-                        AltMedia = $"Media giao diện {i + 1}",
+                        DuongDan = mediaUrl,
+                        AltMedia = i == 0 ? "Logo chính HoaiThu.Vn" : "Logo phụ HoaiThu.Vn",
                         LinkMedia = null,
                         NgayTao = DateTime.UtcNow,
-                        TrangThai = 1,
+                        TrangThai = trangThai,
                         MaSanPham = null,
                         MaBinhLuan = null,
                         MaGiaoDien = giaoDienIds[i]

@@ -16,7 +16,7 @@ builder.Logging.AddDebug();
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-    //options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnectionDocker")));
+//options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnectionDocker")));
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -30,13 +30,13 @@ builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo
     {
-        Title = "Fashion API",
+        Title = "HoaiThu.Vn API",
         Version = "v1",
         Description = "API quản lý sản phẩm thời trang, thương hiệu và các thực thể liên quan",
         Contact = new OpenApiContact
         {
-            Name = "Tên của bạn",
-            Email = "your-email@example.com"
+            Name = "Hoài Thu",
+            Email = "contact.hoaithu.vn@gmail.com"
         }
     });
 
@@ -101,7 +101,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowSpecificOrigins", corsBuilder =>
     {
         corsBuilder
-            .WithOrigins("http://localhost:3000", "http://localhost:5173", "https://swagger.io", "https://fashionapp.com", "http://localhost:8081") // Thay thêm domains sản xuất
+            .WithOrigins("https://swagger.io", "https://hoaithu.vn", "https://www.hoaithu.vn") // Thay thêm domains sản xuất
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials(); // Quan trọng cho authentication với cookies/credentials
@@ -122,14 +122,14 @@ var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Fashion API v1");
-        c.RoutePrefix = "swagger";
-        c.InjectStylesheet("/swagger-ui/swagger-ui.css");
-    });
 }
+app.UseSwagger();
+app.UseSwaggerUI(c =>
+{
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "HoaiThu.Vn API v1");
+    c.RoutePrefix = "swagger";
+    c.InjectStylesheet("/swagger-ui/swagger-ui.css");
+});
 
 app.UseStaticFiles();
 app.UseHttpsRedirection();
