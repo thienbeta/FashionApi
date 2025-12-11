@@ -15,8 +15,8 @@ builder.Logging.AddConsole();
 builder.Logging.AddDebug();
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-//options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnectionDocker")));
+// options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnectionDocker")));
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -51,10 +51,11 @@ builder.Services.AddSwaggerGen(c =>
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         In = ParameterLocation.Header,
-        Description = "Please enter JWT with Bearer into field",
+        Description = "Please enter token",
         Name = "Authorization",
-        Type = SecuritySchemeType.ApiKey,
-        Scheme = "Bearer"
+        Type = SecuritySchemeType.Http,
+        BearerFormat = "JWT",
+        Scheme = "bearer"
     });
 
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -101,7 +102,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowSpecificOrigins", corsBuilder =>
     {
         corsBuilder
-            .WithOrigins("https://swagger.io", "https://hoaithu.vn", "https://www.hoaithu.vn") // Thay thêm domains sản xuất
+            .WithOrigins("http://localhost:8081", "https://swagger.io", "https://hoaithu.vn", "https://www.hoaithu.vn") // Thay thêm domains sản xuất
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials(); // Quan trọng cho authentication với cookies/credentials
@@ -201,4 +202,4 @@ catch (Exception ex)
     logger?.LogError(ex, "Lỗi khi seed dữ liệu ban đầu: {Message}", ex.Message);
 }
 
-app.Run();
+app.Run("http://0.0.0.0:5083");
