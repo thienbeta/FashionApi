@@ -201,4 +201,4 @@ catch (Exception ex)
     logger?.LogError(ex, "Lỗi khi seed dữ liệu ban đầu: {Message}", ex.Message);
 }
 
-app.Run("http://0.0.0.0:5083");
+app.Run();
