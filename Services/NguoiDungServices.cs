@@ -97,6 +97,13 @@ namespace FashionApi.Services
                 if (nguoiDung == null)
                     throw new KeyNotFoundException("Người dùng không tồn tại.");
 
+                // Kiểm tra bảo mật: Ngăn chặn admin khác thao tác với admin đang hoạt động
+                if (nguoiDung.VaiTro == 1 && nguoiDung.TrangThai == 1)
+                {
+                    _logger.LogWarning("Phát hiện thao tác trái phép: Cố gắng chỉnh sửa admin đang hoạt động. MaNguoiDung={Id}, TaiKhoan={TaiKhoan}", id, nguoiDung.TaiKhoan);
+                    throw new UnauthorizedAccessException("Không thể thao tác với tài khoản admin đang hoạt động. Vui lòng liên hệ quản trị hệ thống.");
+                }
+
                 // Kiểm tra tài khoản, email và số điện thoại có bị trùng không
                 if (!string.IsNullOrEmpty(model.TaiKhoan) && model.TaiKhoan != nguoiDung.TaiKhoan && await CheckAccountExistsAsync(model.TaiKhoan))
                     throw new InvalidOperationException("Tài khoản đã tồn tại.");
@@ -181,6 +188,13 @@ namespace FashionApi.Services
                 {
                     _logger.LogWarning("Người dùng không tồn tại: MaNguoiDung={Id}", id);
                     return false;
+                }
+
+                // Kiểm tra bảo mật: Ngăn chặn xóa admin đang hoạt động
+                if (nguoiDung.VaiTro == 1 && nguoiDung.TrangThai == 1)
+                {
+                    _logger.LogWarning("Phát hiện thao tác trái phép: Cố gắng xóa admin đang hoạt động. MaNguoiDung={Id}, TaiKhoan={TaiKhoan}", id, nguoiDung.TaiKhoan);
+                    throw new UnauthorizedAccessException("Không thể xóa tài khoản admin đang hoạt động. Vui lòng liên hệ quản trị hệ thống.");
                 }
 
                 // Xóa avatar của người dùng nếu có
