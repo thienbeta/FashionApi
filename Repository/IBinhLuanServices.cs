@@ -11,6 +11,7 @@ namespace FashionApi.Repository
     {
         Task<BinhLuanView> CreateAsync(BinhLuanCreate model);
         Task<BinhLuanView> UpdateAsync(int id, BinhLuanEdit model, List<IFormFile>? newImageFiles = null);
+        Task<bool> UpdateStatusAsync(int id, int trangThai);
         Task<bool> DeleteAsync(int id);
         Task<BinhLuanView> GetByIdAsync(int id);
         Task<List<BinhLuanView>> GetAllAsync();

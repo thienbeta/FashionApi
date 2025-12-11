@@ -174,6 +174,37 @@ namespace FashionApi.Controllers
         }
 
         /// <summary>
+        /// Cập nhật trạng thái bình luận (Ẩn/Hiện)
+        /// </summary>
+        /// <param name="id">ID bình luận</param>
+        /// <param name="request">Trạng thái mới</param>
+        /// <returns>Kết quả cập nhật</returns>
+        [Authorize(Roles = "Admin")]
+        [HttpPatch("{id}/trang-thai")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> UpdateStatus(int id, [FromBody] StatusRequest request)
+        {
+            try
+            {
+                var result = await _binhLuanServices.UpdateStatusAsync(id, request.TrangThai);
+                if (!result)
+                {
+                    return NotFound(new { Message = "Bình luận không tồn tại." });
+                }
+
+                _logger.LogInformation("Cập nhật trạng thái bình luận thành công: Id={Id}, TrangThai={TrangThai}", id, request.TrangThai);
+                return Ok(new { Message = "Cập nhật trạng thái thành công." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi cập nhật trạng thái bình luận: Id={Id}", id);
+                return StatusCode(StatusCodes.Status500InternalServerError, new { Message = "Lỗi máy chủ nội bộ", Detail = ex.Message });
+            }
+        }
+
+        /// <summary>
         /// Xóa bình luận - Xóa mềm
         /// </summary>
         /// <param name="id">ID bình luận cần xóa</param>
@@ -376,5 +407,10 @@ namespace FashionApi.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, new { Message = "Lỗi máy chủ nội bộ", Detail = ex.Message });
             }
         }
+    }
+
+    public class StatusRequest
+    {
+        public int TrangThai { get; set; }
     }
 }

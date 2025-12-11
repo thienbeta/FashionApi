@@ -205,6 +205,38 @@ namespace FashionApi.Services
             }
         }
 
+        public async Task<bool> UpdateStatusAsync(int id, int trangThai)
+        {
+            _logger.LogInformation("Cập nhật trạng thái bình luận: MaBinhLuan={Id}, TrangThai={TrangThai}", id, trangThai);
+
+            try
+            {
+                var binhLuan = await _context.BinhLuans.FindAsync(id);
+
+                if (binhLuan == null)
+                {
+                    _logger.LogWarning("Bình luận không tồn tại: MaBinhLuan={Id}", id);
+                    return false;
+                }
+
+                binhLuan.TrangThai = trangThai;
+                await _context.SaveChangesAsync();
+
+                // Clear cache
+                _cacheServices.Remove($"BinhLuan_{id}");
+                _cacheServices.Remove("BinhLuan_All");
+                if (binhLuan.MaSanPham.HasValue)
+                    _cacheServices.Remove($"BinhLuan_SanPham_{binhLuan.MaSanPham.Value}");
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi cập nhật trạng thái bình luận: MaBinhLuan={Id}", id);
+                throw;
+            }
+        }
+
         public async Task<bool> DeleteAsync(int id)
         {
             _logger.LogInformation("Bắt đầu xóa bình luận: MaBinhLuan={Id}", id);
