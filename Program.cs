@@ -30,7 +30,7 @@ builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v2", new OpenApiInfo
     {
-        Title = "HoaiThu.Vn API",
+        Title = "ThuHoai.Vn API",
         Version = "v2",
         Description = "API quản lý sản phẩm thời trang, thương hiệu và các thực thể liên quan",
         Contact = new OpenApiContact
@@ -105,7 +105,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowSpecificOrigins", corsBuilder =>
     {
         corsBuilder
-            .WithOrigins("http://localhost:8081", "https://swagger.io", "https://hoaithu.vn", "https://www.hoaithu.vn") // Thay thêm domains sản xuất
+            .WithOrigins("https://swagger.io", "https://ThuHoai.vn", "https://www.ThuHoai.vn") // Thay thêm domains sản xuất
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials(); // Quan trọng cho authentication với cookies/credentials
@@ -131,10 +131,10 @@ if (app.Environment.IsDevelopment())
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
-    c.SwaggerEndpoint("/swagger/v2/swagger.json", "HoaiThu.Vn API v2");
+    c.SwaggerEndpoint("/swagger/v2/swagger.json", "ThuHoai.Vn API v2");
     c.RoutePrefix = "swagger";
     c.InjectStylesheet("/swagger-ui/swagger-ui.css");
-    c.DocumentTitle = "HoaiThu.Vn API Documentation";
+    c.DocumentTitle = "ThuHoai.Vn API Documentation";
     c.EnableDeepLinking();
     c.DisplayRequestDuration();
     c.ShowExtensions();

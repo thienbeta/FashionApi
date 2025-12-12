@@ -516,7 +516,7 @@ namespace FashionApi.Services
                 <body>
                     <div class='container'>
                         <div class='header'>
-                            <h2>Xin chào từ HoaiThu.Vn!</h2>
+                            <h2>Xin chào từ ThuHoai.Vn!</h2>
                         </div>
                         <div class='content'>
                             <p>Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn.</p>
@@ -524,14 +524,14 @@ namespace FashionApi.Services
                             <div class='otp'>{otp}</div>
                             <p>Mã này sẽ hết hạn sau <strong>5 phút</strong>.</p>
                             <p>Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này và liên hệ hỗ trợ nếu cần.</p>
-                            <a href='https://hoaithu.vn/reset-password' class='button'>Đặt lại mật khẩu ngay</a>
+                            <a href='https://ThuHoai.vn/reset-password' class='button'>Đặt lại mật khẩu ngay</a>
                         </div>
                         <div class='footer'>
                             <p>&copy; 2025 HoaThu. Tất cả quyền được bảo lưu.</p>
-                            <p>Liên hệ với chúng tôi: <a href='mailto:contact.hoaithu.vn@gmail.com'>contact.hoaithu.vn@gmail.com</a></p>
+                            <p>Liên hệ với chúng tôi: <a href='mailto:contact.ThuHoai.vn@gmail.com'>contact.ThuHoai.vn@gmail.com</a></p>
                             <p>Theo dõi chúng tôi: 
-                                <a href='https://facebook.com/hoaithu.vn'>Facebook</a> | 
-                                <a href='https://instagram.com/hoaithu.vn'>Instagram</a>
+                                <a href='https://facebook.com/ThuHoai.vn'>Facebook</a> | 
+                                <a href='https://instagram.com/ThuHoai.vn'>Instagram</a>
                             </p>
                         </div>
                     </div>
