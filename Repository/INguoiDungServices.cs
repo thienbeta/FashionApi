@@ -7,7 +7,7 @@ namespace FashionApi.Repository
     public interface INguoiDungServices
     {
         Task<NguoiDungView> CreateAsync(NguoiDungCreate model);
-        Task<NguoiDungView> UpdateAsync(int id, NguoiDungEdit model, IFormFile imageFile = null);
+        Task<NguoiDungView> UpdateAsync(int id, NguoiDungEdit model, IFormFile imageFile = null, int? currentUserId = null);
         Task<bool> DeleteAsync(int id);
         Task<NguoiDungView> GetByIdAsync(int id);
         Task<List<NguoiDungView>> GetAllAsync();

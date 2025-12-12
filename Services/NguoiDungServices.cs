@@ -87,7 +87,7 @@ namespace FashionApi.Services
         }
 
         // Cập nhật người dùng, hỗ trợ thay đổi mật khẩu
-        public async Task<NguoiDungView> UpdateAsync(int id, NguoiDungEdit model, IFormFile imageFile = null)
+        public async Task<NguoiDungView> UpdateAsync(int id, NguoiDungEdit model, IFormFile imageFile = null, int? currentUserId = null)
         {
             _logger.LogInformation("Bắt đầu cập nhật người dùng: MaNguoiDung={Id}", id);
 
@@ -98,10 +98,16 @@ namespace FashionApi.Services
                     throw new KeyNotFoundException("Người dùng không tồn tại.");
 
                 // Kiểm tra bảo mật: Ngăn chặn admin khác thao tác với admin đang hoạt động
+                // Cho phép admin chỉnh sửa thông tin của chính mình
                 if (nguoiDung.VaiTro == 1 && nguoiDung.TrangThai == 1)
                 {
-                    _logger.LogWarning("Phát hiện thao tác trái phép: Cố gắng chỉnh sửa admin đang hoạt động. MaNguoiDung={Id}, TaiKhoan={TaiKhoan}", id, nguoiDung.TaiKhoan);
-                    throw new UnauthorizedAccessException("Không thể thao tác với tài khoản admin đang hoạt động. Vui lòng liên hệ quản trị hệ thống.");
+                    // Kiểm tra xem có phải admin đang chỉnh sửa thông tin của chính mình không
+                    if (currentUserId.HasValue && nguoiDung.MaNguoiDung != currentUserId.Value)
+                    {
+                        _logger.LogWarning("Phát hiện thao tác trái phép: Cố gắng chỉnh sửa admin đang hoạt động khác. MaNguoiDung={Id}, TaiKhoan={TaiKhoan}, CurrentUserId={CurrentUserId}", id, nguoiDung.TaiKhoan, currentUserId.Value);
+                        throw new UnauthorizedAccessException("Không thể thao tác với tài khoản admin đang hoạt động khác. Vui lòng liên hệ quản trị hệ thống.");
+                    }
+                    // Nếu currentUserId null hoặc bằng với id của admin đang bị chỉnh sửa, cho phép tiếp tục
                 }
 
                 // Kiểm tra tài khoản, email và số điện thoại có bị trùng không

@@ -102,7 +102,7 @@ namespace FashionApi.Controllers
 
             try
             {
-                var nguoiDung = await _nguoiDungServices.UpdateAsync(id, model, imageFile);
+                var nguoiDung = await _nguoiDungServices.UpdateAsync(id, model, imageFile, currentUserId);
                 _logger.LogInformation("Cập nhật người dùng thành công: {@NguoiDung}", nguoiDung);
                 return Ok(nguoiDung);
             }
