@@ -50,6 +50,11 @@ namespace FashionApi.Controllers
                 _logger.LogInformation("Tạo người dùng thành công: {@NguoiDung}", nguoiDung);
                 return Ok(nguoiDung);
             }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogWarning("Lỗi tạo người dùng (Trùng lặp/Logic): {@Model}, Message={Message}", model, ex.Message);
+                return BadRequest(new { Message = ex.Message });
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Lỗi khi tạo người dùng: {Message}, StackTrace: {StackTrace}", ex.Message, ex.StackTrace);
@@ -300,6 +305,11 @@ namespace FashionApi.Controllers
                 _logger.LogInformation("Đăng nhập thành công: {TaiKhoan}", model.TaiKhoan);
                 return Ok(nguoiDung);
             }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogWarning(ex, "Lỗi đăng nhập (Tài khoản bị khóa/Lỗi logic): {TaiKhoan}, Message={Message}", model.TaiKhoan, ex.Message);
+                return BadRequest(new { Message = ex.Message });
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Lỗi khi đăng nhập: {Message}, StackTrace: {StackTrace}", ex.Message, ex.StackTrace);
@@ -328,6 +338,11 @@ namespace FashionApi.Controllers
             {
                 _logger.LogWarning("Email không tồn tại: {Email}, Message={Message}", email, ex.Message);
                 return NotFound(new { Message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogWarning("Tài khoản bị khóa khi yêu cầu quên mật khẩu: {Email}, Message={Message}", email, ex.Message);
+                return BadRequest(new { Message = ex.Message });
             }
             catch (Exception ex)
             {

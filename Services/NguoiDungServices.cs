@@ -367,6 +367,12 @@ namespace FashionApi.Services
                     return null;
                 }
 
+                if (nguoiDung.TrangThai == 0)
+                {
+                    _logger.LogWarning("Tài khoản đã bị khóa: {TaiKhoan}", taiKhoan);
+                    throw new InvalidOperationException("Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.");
+                }
+
                 var userView = MapToView(nguoiDung);
                 var token = GenerateJwtToken(userView);
 
@@ -436,6 +442,9 @@ namespace FashionApi.Services
                 var nguoiDung = await _context.NguoiDungs.FirstOrDefaultAsync(nd => nd.Email == email);
                 if (nguoiDung == null)
                     throw new KeyNotFoundException("Email không tồn tại.");
+
+                if (nguoiDung.TrangThai == 0)
+                    throw new InvalidOperationException("Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.");
 
                 // Tạo OTP ngẫu nhiên 6 chữ số
                 var otp = new Random().Next(100000, 999999).ToString();
@@ -570,6 +579,9 @@ namespace FashionApi.Services
                 var nguoiDung = await _context.NguoiDungs.FirstOrDefaultAsync(nd => nd.Email == model.Email);
                 if (nguoiDung == null)
                     throw new KeyNotFoundException("Email không tồn tại.");
+
+                if (nguoiDung.TrangThai == 0)
+                    throw new InvalidOperationException("Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.");
 
                 // Lấy OTP từ cache
                 var cachedOtp = await _cacheServices.GetOrCreateAsync<string>($"OTP_{model.Email}", async () => null);
