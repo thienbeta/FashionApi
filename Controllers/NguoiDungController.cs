@@ -81,6 +81,13 @@ namespace FashionApi.Controllers
                 return BadRequest(ModelState);
             }
 
+            // Check file size (max 5MB)
+            if (imageFile != null && imageFile.Length > 5 * 1024 * 1024)
+            {
+                return BadRequest(new { Message = "Kích thước ảnh không được vượt quá 5MB." });
+            }
+
+
             if (id != model.MaNguoiDung)
             {
                 _logger.LogWarning("ID không khớp với dữ liệu chỉnh sửa: Id={Id}, MaNguoiDung={MaNguoiDung}", id, model.MaNguoiDung);
@@ -102,7 +109,8 @@ namespace FashionApi.Controllers
 
             try
             {
-                var nguoiDung = await _nguoiDungServices.UpdateAsync(id, model, imageFile, currentUserId);
+                var currentUserEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? User.FindFirst("email")?.Value;
+                var nguoiDung = await _nguoiDungServices.UpdateAsync(id, model, imageFile, currentUserId, currentUserEmail);
                 _logger.LogInformation("Cập nhật người dùng thành công: {@NguoiDung}", nguoiDung);
                 return Ok(nguoiDung);
             }
@@ -134,7 +142,8 @@ namespace FashionApi.Controllers
         {
             try
             {
-                var result = await _nguoiDungServices.DeleteAsync(id);
+                var currentUserEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? User.FindFirst("email")?.Value;
+                var result = await _nguoiDungServices.DeleteAsync(id, currentUserEmail);
                 if (!result)
                 {
                     _logger.LogWarning("Người dùng không tồn tại: Id={Id}", id);
