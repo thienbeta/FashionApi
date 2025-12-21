@@ -207,7 +207,7 @@ namespace FashionApi.Services
 
         public async Task<bool> DeleteAsync(int id)
         {
-            _logger.LogInformation("Bắt đầu xóa danh mục: MaDanhMuc={Id}", id);
+            _logger.LogInformation("Bắt đầu xóa mềm danh mục: MaDanhMuc={Id}", id);
 
             try
             {
@@ -218,36 +218,29 @@ namespace FashionApi.Services
                     return false;
                 }
 
+                // Kiểm tra xem danh mục có đang được sử dụng trong sản phẩm không
                 var isUsedInSanPham = await _context.SanPhams
                     .AsNoTracking()
                     .AnyAsync(sp => sp.MaLoai == id || sp.MaThuongHieu == id || sp.MaHashtag == id);
 
                 if (isUsedInSanPham)
                 {
-                    _logger.LogWarning("Không thể xóa danh mục vì đang được sử dụng trong SanPham: MaDanhMuc={Id}", id);
-                    throw new InvalidOperationException("Danh mục đang được sử dụng trong sản phẩm.");
+                    _logger.LogInformation("Danh mục đang được sử dụng trong sản phẩm nhưng vẫn thực hiện xóa mềm: MaDanhMuc={Id}", id);
                 }
-
-                if (!string.IsNullOrEmpty(danhMuc.HinhAnh))
+                else
                 {
-                    var imageDeleted = await _mediaServices.DeleteImageAsync(danhMuc.HinhAnh);
-                    if (imageDeleted)
-                    {
-                        _logger.LogInformation("Đã xóa hình ảnh danh mục: {ImageUrl}", danhMuc.HinhAnh);
-                    }
-                    else
-                    {
-                        _logger.LogWarning("Không thể xóa hình ảnh danh mục: {ImageUrl}", danhMuc.HinhAnh);
-                    }
+                    _logger.LogInformation("Danh mục không được sử dụng trong sản phẩm: MaDanhMuc={Id}", id);
                 }
 
-                _context.DanhMucs.Remove(danhMuc);
+                // Xóa mềm bằng cách đánh dấu trạng thái = 0 (không hoạt động)
+                danhMuc.TrangThai = 0;
+
                 await _context.SaveChangesAsync();
-                _logger.LogInformation("Danh mục được xóa thành công: MaDanhMuc={Id}", id);
+                _logger.LogInformation("Danh mục được xóa mềm thành công: MaDanhMuc={Id}, TrangThai={TrangThai}", id, danhMuc.TrangThai);
 
                 _cacheServices.Remove("DanhMuc_All");
                 _cacheServices.Remove($"DanhMuc_{id}");
-                _cacheServices.Remove($"DanhMuc_Status_{danhMuc.TrangThai}");
+                _cacheServices.Remove($"DanhMuc_Status_1"); // Xóa cache trạng thái hoạt động
                 _cacheServices.Remove($"DanhMuc_CategoryType_{danhMuc.LoaiDanhMuc}");
                 _logger.LogDebug("Đã xóa cache: MaDanhMuc={Id}", id);
 
@@ -255,7 +248,7 @@ namespace FashionApi.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi xóa danh mục: MaDanhMuc={Id}, StackTrace: {StackTrace}", id, ex.StackTrace);
+                _logger.LogError(ex, "Lỗi khi xóa mềm danh mục: MaDanhMuc={Id}, StackTrace: {StackTrace}", id, ex.StackTrace);
                 throw;
             }
         }

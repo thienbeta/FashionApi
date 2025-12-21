@@ -5,9 +5,9 @@ using FashionApi.Models.Create;
 using FashionApi.Models.Edit;
 using FashionApi.Models.View;
 using FashionApi.Repository;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Logging;
 
 namespace FashionApi.Controllers
@@ -111,11 +111,12 @@ namespace FashionApi.Controllers
         }
 
         /// <summary>
-        /// Xóa danh mục - Xóa mềm
+        /// Xóa mềm danh mục - Đánh dấu trạng thái không hoạt động (TrangThai = 0)
+        /// Cho phép xóa danh mục ngay cả khi đang được sử dụng trong sản phẩm
         /// </summary>
         /// <param name="id">ID danh mục cần xóa</param>
-        /// <returns>Kết quả xóa danh mục</returns>
-        /// <response code="200">Xóa danh mục thành công</response>
+        /// <returns>Kết quả xóa mềm danh mục</returns>
+        /// <response code="200">Xóa mềm danh mục thành công</response>
         /// <response code="404">Không tìm thấy danh mục</response>
         /// <response code="500">Lỗi máy chủ nội bộ</response>
         [Authorize(Roles = "Admin")]
@@ -131,12 +132,12 @@ namespace FashionApi.Controllers
                     return NotFound(new { Message = "Danh mục không tồn tại." });
                 }
 
-                _logger.LogInformation("Xóa danh mục thành công: Id={Id}", id);
-                return Ok(new { Message = "Xóa danh mục thành công." });
+                _logger.LogInformation("Xóa mềm danh mục thành công: Id={Id}", id);
+                return Ok(new { Message = "Xóa mềm danh mục thành công." });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi xóa danh mục: Id={Id}, StackTrace: {StackTrace}", id, ex.StackTrace);
+                _logger.LogError(ex, "Lỗi khi xóa mềm danh mục: Id={Id}, StackTrace: {StackTrace}", id, ex.StackTrace);
                 return StatusCode(500, new { Message = "Lỗi máy chủ nội bộ", Detail = ex.Message });
             }
         }
